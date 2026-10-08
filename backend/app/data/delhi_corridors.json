@@ -1,0 +1,299 @@
+{
+  "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
+  "name": "Rajiv Chowk (Connaught Place) to Mandi House Metro Hub",
+  "city": "New Delhi",
+  "origin": {
+    "name": "Rajiv Chowk Metro Station (Gate 2)",
+    "coordinates": [77.2195, 28.6328]
+  },
+  "destination": {
+    "name": "Mandi House Metro Interchange",
+    "coordinates": [77.2345, 28.6258]
+  },
+  "candidate_routes": [
+    {
+      "id": "route-direct-barakhamba",
+      "name": "Barakhamba Road Direct",
+      "mode_candidate": "FASTEST",
+      "description": "Shortest path along Outer Circle and Barakhamba arterial road. Minimal street trees, wide asphalt surface, high solar exposure during midday.",
+      "total_length_m": 1540,
+      "estimated_baseline_min": 15.5,
+      "path_coordinates": [
+        [77.2195, 28.6328],
+        [77.2215, 28.6320],
+        [77.2248, 28.6305],
+        [77.2285, 28.6288],
+        [77.2318, 28.6272],
+        [77.2345, 28.6258]
+      ],
+      "segments": [
+        {
+          "name": "Connaught Outer Circle Crossing",
+          "length_m": 220,
+          "start_coords": [77.2195, 28.6328],
+          "end_coords": [77.2215, 28.6320],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.10,
+          "building_height_m": 12.0,
+          "street_width_m": 35.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
+        },
+        {
+          "name": "Barakhamba Road North",
+          "length_m": 410,
+          "start_coords": [77.2215, 28.6320],
+          "end_coords": [77.2248, 28.6305],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.15,
+          "building_height_m": 45.0,
+          "street_width_m": 38.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
+        },
+        {
+          "name": "Barakhamba Commercial Tower Corridor",
+          "length_m": 460,
+          "start_coords": [77.2248, 28.6305],
+          "end_coords": [77.2285, 28.6288],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.12,
+          "building_height_m": 50.0,
+          "street_width_m": 36.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
+        },
+        {
+          "name": "Barakhamba Approach to Mandi House",
+          "length_m": 450,
+          "start_coords": [77.2285, 28.6288],
+          "end_coords": [77.2345, 28.6258],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.20,
+          "building_height_m": 25.0,
+          "street_width_m": 32.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
+        }
+      ]
+    },
+    {
+      "id": "route-canopy-kg-marg",
+      "name": "Kasturba Gandhi Marg Tree Avenue",
+      "mode_candidate": "BALANCED",
+      "description": "Follows KG Marg lined with mature heritage Neem and Peepal tree canopies, connecting via Tolstoy Marg to Mandi House.",
+      "total_length_m": 1780,
+      "estimated_baseline_min": 17.8,
+      "path_coordinates": [
+        [77.2195, 28.6328],
+        [77.2210, 28.6315],
+        [77.2235, 28.6280],
+        [77.2260, 28.6250],
+        [77.2305, 28.6254],
+        [77.2345, 28.6258]
+      ],
+      "segments": [
+        {
+          "name": "Connaught Place KG Radial Link",
+          "length_m": 210,
+          "start_coords": [77.2195, 28.6328],
+          "end_coords": [77.2210, 28.6315],
+          "surface_type": "concrete",
+          "canopy_coverage": 0.35,
+          "building_height_m": 15.0,
+          "street_width_m": 25.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "secondary",
+          "speed_limit_kmh": 35
+        },
+        {
+          "name": "KG Marg Shaded Tree Avenue (North)",
+          "length_m": 480,
+          "start_coords": [77.2210, 28.6315],
+          "end_coords": [77.2235, 28.6280],
+          "surface_type": "concrete",
+          "canopy_coverage": 0.75,
+          "building_height_m": 18.0,
+          "street_width_m": 28.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "secondary",
+          "speed_limit_kmh": 35
+        },
+        {
+          "name": "KG Marg Heritage Canopy Stretch",
+          "length_m": 420,
+          "start_coords": [77.2235, 28.6280],
+          "end_coords": [77.2260, 28.6250],
+          "surface_type": "concrete",
+          "canopy_coverage": 0.80,
+          "building_height_m": 16.0,
+          "street_width_m": 26.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "secondary",
+          "speed_limit_kmh": 35
+        },
+        {
+          "name": "Tolstoy Marg Shaded Walkway",
+          "length_m": 670,
+          "start_coords": [77.2260, 28.6250],
+          "end_coords": [77.2345, 28.6258],
+          "surface_type": "mixed",
+          "canopy_coverage": 0.65,
+          "building_height_m": 22.0,
+          "street_width_m": 24.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "secondary",
+          "speed_limit_kmh": 30
+        }
+      ]
+    },
+    {
+      "id": "route-colonnade-coolest",
+      "name": "CP Colonnade Arcade & Shaded Lane",
+      "mode_candidate": "COOLEST",
+      "description": "Utilizes 100% covered pedestrian colonnade arcades in Connaught Place, transitioning through tree-shaded School Lane and Babar Road.",
+      "total_length_m": 1920,
+      "estimated_baseline_min": 19.4,
+      "path_coordinates": [
+        [77.2195, 28.6328],
+        [77.2180, 28.6315],
+        [77.2198, 28.6290],
+        [77.2225, 28.6270],
+        [77.2270, 28.6265],
+        [77.2310, 28.6260],
+        [77.2345, 28.6258]
+      ],
+      "segments": [
+        {
+          "name": "Connaught Inner Circle Covered Colonnade",
+          "length_m": 350,
+          "start_coords": [77.2195, 28.6328],
+          "end_coords": [77.2180, 28.6315],
+          "surface_type": "paver_colonnade",
+          "canopy_coverage": 0.0,
+          "building_height_m": 14.0,
+          "street_width_m": 12.0,
+          "is_colonnade": true,
+          "has_sidewalk": true,
+          "highway_type": "pedestrian",
+          "speed_limit_kmh": 0
+        },
+        {
+          "name": "Janpath Covered Arcade Link",
+          "length_m": 310,
+          "start_coords": [77.2180, 28.6315],
+          "end_coords": [77.2198, 28.6290],
+          "surface_type": "paver_colonnade",
+          "canopy_coverage": 0.20,
+          "building_height_m": 12.0,
+          "street_width_m": 14.0,
+          "is_colonnade": true,
+          "has_sidewalk": true,
+          "highway_type": "pedestrian",
+          "speed_limit_kmh": 0
+        },
+        {
+          "name": "Atul Grove Shaded Pedestrian Lane",
+          "length_m": 380,
+          "start_coords": [77.2198, 28.6290],
+          "end_coords": [77.2225, 28.6270],
+          "surface_type": "vegetated",
+          "canopy_coverage": 0.85,
+          "building_height_m": 10.0,
+          "street_width_m": 10.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "living_street",
+          "speed_limit_kmh": 20
+        },
+        {
+          "name": "School Lane Green Belt Path",
+          "length_m": 480,
+          "start_coords": [77.2225, 28.6270],
+          "end_coords": [77.2270, 28.6265],
+          "surface_type": "vegetated",
+          "canopy_coverage": 0.80,
+          "building_height_m": 12.0,
+          "street_width_m": 12.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "residential",
+          "speed_limit_kmh": 25
+        },
+        {
+          "name": "Babar Road Shaded Approach to Mandi House",
+          "length_m": 400,
+          "start_coords": [77.2270, 28.6265],
+          "end_coords": [77.2345, 28.6258],
+          "surface_type": "concrete",
+          "canopy_coverage": 0.70,
+          "building_height_m": 14.0,
+          "street_width_m": 16.0,
+          "is_colonnade": false,
+          "has_sidewalk": true,
+          "highway_type": "residential",
+          "speed_limit_kmh": 25
+        }
+      ]
+    },
+    {
+      "id": "route-unsafe-flyover-shortcut",
+      "name": "Vehicular Flyover Expressway Shortcut",
+      "mode_candidate": "REJECTED_UNSAFE",
+      "description": "High-speed vehicular flyover bypass without pedestrian footpaths or barriers. Intentionally included to validate hard safety filtering.",
+      "total_length_m": 1420,
+      "estimated_baseline_min": 14.2,
+      "path_coordinates": [
+        [77.2195, 28.6328],
+        [77.2250, 28.6310],
+        [77.2345, 28.6258]
+      ],
+      "segments": [
+        {
+          "name": "Barakhamba Elevated Flyover Ramp",
+          "length_m": 680,
+          "start_coords": [77.2195, 28.6328],
+          "end_coords": [77.2250, 28.6310],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.0,
+          "building_height_m": 0.0,
+          "street_width_m": 22.0,
+          "is_colonnade": false,
+          "has_sidewalk": false,
+          "highway_type": "flyover",
+          "speed_limit_kmh": 60,
+          "active_hazard": true,
+          "hazard_description": "Prohibited pedestrian access: 60km/h vehicular expressway without segregated sidewalk"
+        },
+        {
+          "name": "Expressway Descent",
+          "length_m": 740,
+          "start_coords": [77.2250, 28.6310],
+          "end_coords": [77.2345, 28.6258],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.0,
+          "building_height_m": 0.0,
+          "street_width_m": 24.0,
+          "is_colonnade": false,
+          "has_sidewalk": false,
+          "highway_type": "trunk",
+          "speed_limit_kmh": 60,
+          "active_hazard": true,
+          "hazard_description": "No pedestrian refuge island at high-speed interchange"
+        }
+      ]
+    }
+  ]
+}

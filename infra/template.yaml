@@ -1,0 +1,185 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  HeatRoute AWS Infrastructure Template
+  Track 02 - Heat & Water (WeMakeDevs Bharat Builds Tour)
+  Serverless Biometeorological Routing Layer & Hydration Recovery POIs
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 256
+    Runtime: python3.11
+    Tracing: Active
+    Environment:
+      Variables:
+        STAGE: prod
+        AWS_REGION_CUSTOM: ap-south-1
+        DYNAMODB_POIS_TABLE: !Ref HydrationPOIsTable
+        S3_FALLBACK_BUCKET: !Ref HeatRouteDataBucket
+
+Resources:
+  # ========================================================
+  # 1. Amazon API Gateway
+  # ========================================================
+  HeatRouteApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+        AllowOrigin: "'*'"
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          ThrottlingRateLimit: 100
+          ThrottlingBurstLimit: 200
+
+  # ========================================================
+  # 2. AWS Lambda: Core Routing & Thermal Exposure Engine
+  # ========================================================
+  HeatRouteCoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend
+      Handler: app.main.handler
+      Description: Deterministic solar geometry, shade estimation, and thermal route optimization
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HydrationPOIsTable
+        - S3ReadPolicy:
+            BucketName: !Ref HeatRouteDataBucket
+        - CloudWatchPutMetricPolicy: {}
+      Events:
+        RootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatRouteApiGateway
+            Path: /
+            Method: GET
+        EvaluateRoutesApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatRouteApiGateway
+            Path: /api/v1/routes/evaluate
+            Method: POST
+        CorridorsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatRouteApiGateway
+            Path: /api/v1/corridors
+            Method: GET
+        HydrationPOIsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatRouteApiGateway
+            Path: /api/v1/hydration-pois
+            Method: GET
+        SolarPositionApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatRouteApiGateway
+            Path: /api/v1/solar-position
+            Method: GET
+
+  # ========================================================
+  # 3. Amazon DynamoDB: Hydration & Cooling POIs
+  # ========================================================
+  HydrationPOIsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HeatRoute-Hydration-POIs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: poi_id
+          AttributeType: S
+        - AttributeName: verified_status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: poi_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: verified_status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: HeatRoute
+        - Key: Track
+          Value: HeatAndWater
+
+  # ========================================================
+  # 4. Amazon S3: Fallback Geo-Caches & Static Demo Packs
+  # ========================================================
+  HeatRouteDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "heatroute-corridor-cache-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ========================================================
+  # 5. Amazon CloudWatch: Telemetry & Impact Dashboard
+  # ========================================================
+  HeatRouteCloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: HeatRoute-Impact-Telemetry
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "HeatRoute", "ThermalStressHoursAvoided", { "stat": "Sum", "period": 300 } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Cumulative Thermal Stress Hours Avoided by Pedestrians"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Duration", "FunctionName", "${HeatRouteCoreFunction}", { "stat": "Average" } ],
+                  [ ".", "Invocations", ".", ".", { "stat": "Sum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda Execution Latency & Invocations"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  ApiGatewayEndpoint:
+    Description: Public API Gateway Endpoint URL for HeatRoute
+    Value: !Sub "https://${HeatRouteApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  LambdaFunctionArn:
+    Description: HeatRoute Core Lambda Function ARN
+    Value: !GetAtt HeatRouteCoreFunction.Arn
+  DynamoDBTableName:
+    Description: Hydration POIs DynamoDB Table
+    Value: !Ref HydrationPOIsTable

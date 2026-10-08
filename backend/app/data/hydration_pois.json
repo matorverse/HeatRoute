@@ -1,0 +1,74 @@
+{
+  "hydration_and_recovery_pois": [
+    {
+      "id": "poi-bangla-sahib-chhabil",
+      "name": "Gurudwara Bangla Sahib Cold Water Chhabil",
+      "type": "FREE_COMMUNITY_WATER",
+      "coordinates": [77.2091, 28.6261],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Chilled RO Water", "Shaded Seating", "High Capacity", "First-Aid Station"],
+      "accessibility": "Open 24x7 to public",
+      "last_verified_hours_ago": 1.2
+    },
+    {
+      "id": "poi-rajiv-chowk-gate2",
+      "name": "Rajiv Chowk Metro Gate 2 Water Kiosk",
+      "type": "METRO_WATER_ATM",
+      "coordinates": [77.2195, 28.6328],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Filtered RO Water", "Air-Cooled Concourse Entry", "Accessible"],
+      "accessibility": "06:00 - 23:00",
+      "last_verified_hours_ago": 0.5
+    },
+    {
+      "id": "poi-djb-kg-marg",
+      "name": "Delhi Jal Board (DJB) Public Water Post",
+      "type": "MUNICIPAL_WATER_POINT",
+      "coordinates": [77.2235, 28.6280],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Municipal Potable Tap", "Tree Canopy Rest Area"],
+      "accessibility": "Open daylight hours",
+      "last_verified_hours_ago": 3.0
+    },
+    {
+      "id": "poi-barakhamba-metro",
+      "name": "Barakhamba Road Metro Hydration Facility",
+      "type": "METRO_WATER_ATM",
+      "coordinates": [77.2260, 28.6295],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Clean Drinking Water", "Underground Cooling Refuge"],
+      "accessibility": "06:00 - 23:00",
+      "last_verified_hours_ago": 2.1
+    },
+    {
+      "id": "poi-central-park-pavilion",
+      "name": "Central Park Shaded Cooling Pavilion",
+      "type": "SHADED_REST_POINT",
+      "coordinates": [77.2185, 28.6325],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Pergola Shade", "Water Misting Fountain", "Benches", "Lush Lawn"],
+      "accessibility": "06:00 - 21:00",
+      "last_verified_hours_ago": 4.0
+    },
+    {
+      "id": "poi-mandi-house-gate2",
+      "name": "Mandi House Metro Drinking Water Facility",
+      "type": "METRO_WATER_ATM",
+      "coordinates": [77.2345, 28.6258],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Chilled Drinking Water", "Public Restrooms"],
+      "accessibility": "06:00 - 23:00",
+      "last_verified_hours_ago": 1.0
+    },
+    {
+      "id": "poi-tolstoy-cooler",
+      "name": "Tolstoy Marg Community Water Cooler (Pyaau)",
+      "type": "COMMUNITY_PYAAU",
+      "coordinates": [77.2285, 28.6254],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Earthen Pot (Matka) & Electric Chiller", "Tree Shade"],
+      "accessibility": "Open daylight hours",
+      "last_verified_hours_ago": 2.5
+    }
+  ]
+}
