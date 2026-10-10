@@ -11,7 +11,13 @@ import {
   Sun,
   CloudRain,
   ChevronDown,
-  X
+  ChevronUp,
+  X,
+  Volume2,
+  Square,
+  AlertOctagon,
+  AlertTriangle,
+  Navigation
 } from "lucide-react";
 
 import MapView from "./components/MapView";
@@ -31,6 +37,8 @@ export default function App() {
   const [evaluationData, setEvaluationData] = useState(null);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [showHydration, setShowHydration] = useState(true);
+  const [showStationsList, setShowStationsList] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isAwsModalOpen, setIsAwsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -107,14 +115,36 @@ export default function App() {
 
   const handleCorridorChange = (e) => {
     setSelectedCorridorId(e.target.value);
-    setActivePitstopPoiId(null); // Reset pitstop for new corridor
+    setActivePitstopPoiId(null);
   };
+
+  // Hands-free speech synthesis
+  const handleToggleSpeech = useCallback(() => {
+    if (!("speechSynthesis" in window)) return;
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+    } else {
+      window.speechSynthesis.cancel();
+      const rawText = evaluationData?.decision_summary || "HeatRoute pedestrian guidance active.";
+      const cleanText = rawText.replace(/[\u{1F600}-\u{1F6FF}|[\u{2600}-\u{26FF}]/gu, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setIsPlayingAudio(false);
+      utterance.onerror = () => setIsPlayingAudio(false);
+      setIsPlayingAudio(true);
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [isPlayingAudio, evaluationData]);
 
   const activeRoutes = evaluationData?.routes || [];
   const selectedRoute = activeRoutes.find(r => r.id === selectedRouteId) || activeRoutes[0];
   const activePitstopPoi = activePitstopPoiId 
     ? evaluationData?.hydration_pois?.find(p => p.id === activePitstopPoiId) 
     : null;
+
+  const heatIndex = evaluationData?.heat_index_c || 59.8;
 
   return (
     <div className="app-container">
@@ -162,7 +192,7 @@ export default function App() {
           {/* Microclimate Corridor Switcher */}
           <div className="section-label" style={{ marginTop: "6px" }}>
             <MapPin size={13} />
-            <span>Active Corridor Testbed ({corridors.length} Cities)</span>
+            <span>Active Corridor Testbed ({corridors.length} Typologies)</span>
           </div>
 
           <div className="corridor-select-wrapper">
@@ -189,7 +219,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Active Hydration Pitstop Banner if Set */}
+          {/* Active Hydration Pitstop Waypoint Banner if Set */}
           {activePitstopPoi && (
             <div className="pitstop-active-banner">
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -228,10 +258,38 @@ export default function App() {
                 className="metric-pill-value" 
                 style={{ color: season === "MONSOON" ? "#38BDF8" : "var(--color-accent)" }}
               >
-                {season === "MONSOON" ? "ALERT" : `${evaluationData?.heat_index_c || 59.8}°C`}
+                {season === "MONSOON" ? "ALERT" : `${heatIndex}°C`}
               </span>
             </div>
           </div>
+
+          {/* Real-time Health Advisory Banner (IMD / Medical Standard) */}
+          {season === "SUMMER" && heatIndex >= 54.0 && (
+            <div className="health-advisory-banner danger">
+              <AlertOctagon size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ color: "#FCA5A5" }}>IMD Red Alert (Extreme Heat Hazard):</strong> Heat stroke risk imminent with prolonged exposure. Recommended hydration: 500ml every 30m. Rest in covered shade every 1 km.
+              </div>
+            </div>
+          )}
+
+          {season === "SUMMER" && heatIndex >= 40.0 && heatIndex < 54.0 && (
+            <div className="health-advisory-banner warning">
+              <AlertTriangle size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ color: "#FDE68A" }}>High Heat Caution:</strong> Heat cramps likely. Maintain fluid intake (350ml every 30m). Favor tree canopy routes.
+              </div>
+            </div>
+          )}
+
+          {season === "MONSOON" && (
+            <div className="health-advisory-banner monsoon">
+              <CloudRain size={16} color="#38BDF8" style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong style={{ color: "#BAE6FD" }}>Monsoon Inundation Warning:</strong> Flash flooding detected in railway subways and sunken underpasses. Elevated colonnade paths advised.
+              </div>
+            </div>
+          )}
 
           {/* Interactive Time-Travel Slider */}
           <TimeSlider
@@ -240,13 +298,22 @@ export default function App() {
           />
         </section>
 
-        {/* Explainable Decision Summary */}
+        {/* Explainable Decision Summary with Hands-Free Audio Advisory */}
         {evaluationData?.decision_summary && (
           <div className="decision-card">
             <Sparkles size={20} className="decision-icon" />
-            <div className="decision-text">
+            <div className="decision-text" style={{ flex: 1 }}>
               {evaluationData.decision_summary}
             </div>
+            <button
+              id="audio-advisory-btn"
+              className={`audio-advisory-btn ${isPlayingAudio ? "playing" : ""}`}
+              onClick={handleToggleSpeech}
+              title="Hands-free audio safety advisory for street pedestrians"
+            >
+              {isPlayingAudio ? <Square size={11} /> : <Volume2 size={13} />}
+              <span>{isPlayingAudio ? "Stop" : "Listen"}</span>
+            </button>
           </div>
         )}
 
@@ -277,12 +344,17 @@ export default function App() {
             className={`poi-toggle-btn ${showHydration ? "active" : ""}`}
             onClick={() => setShowHydration(!showHydration)}
           >
-            <Droplets size={16} />
-            <span>
-              {showHydration 
-                ? "Hide Water & Rest Stops" 
-                : `Show Water & Rest Stops (${evaluationData?.hydration_pois?.length || 0})`}
-            </span>
+            <Droplets size={15} />
+            <span>{showHydration ? "Map Pins (Active)" : "Show Pins"}</span>
+          </button>
+
+          <button
+            id="toggle-stations-list"
+            className={`poi-toggle-btn ${showStationsList ? "active" : ""}`}
+            onClick={() => setShowStationsList(!showStationsList)}
+          >
+            <Navigation size={14} />
+            <span>{showStationsList ? "Hide Stations" : `Stations (${evaluationData?.hydration_pois?.length || 0})`}</span>
           </button>
 
           <button
@@ -290,10 +362,55 @@ export default function App() {
             className="aws-pill-btn"
             onClick={() => setIsAwsModalOpen(true)}
           >
-            <Cloud size={16} />
+            <Cloud size={15} />
             <span>AWS Telemetry</span>
           </button>
         </div>
+
+        {/* Collapsible Verified Hydration & Recovery Stations Drawer */}
+        {showStationsList && evaluationData?.hydration_pois && (
+          <div className="hydration-stations-drawer">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "var(--color-hydration)", textTransform: "uppercase" }}>
+                🚰 Verified Drinking Water & Recovery Points
+              </span>
+              <button 
+                onClick={() => setShowStationsList(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {evaluationData.hydration_pois.map(poi => {
+              const isAdded = activePitstopPoiId === poi.id;
+              return (
+                <div key={poi.id} className="hydration-station-card">
+                  <div className="station-card-top">
+                    <span className="station-name">{poi.name}</span>
+                    <span className="station-type-tag">{poi.type.replace(/_/g, ' ')}</span>
+                  </div>
+
+                  <div className="station-features-row">
+                    {poi.features?.map((f, i) => (
+                      <span key={i} className="station-feature-badge">{f}</span>
+                    ))}
+                  </div>
+
+                  <div className="station-card-bottom">
+                    <span className="station-accessibility">● {poi.accessibility || "Open to public"}</span>
+                    <button
+                      className={`station-waypoint-btn ${isAdded ? "active" : ""}`}
+                      onClick={() => handleTogglePitstop(poi.id)}
+                    >
+                      {isAdded ? "✓ Waypoint Added" : "+ Add Waypoint (+1.5m)"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </aside>
 
       {/* Main Map View */}

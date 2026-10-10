@@ -4,7 +4,12 @@
  * with deterministic in-browser calculation fallback so demos NEVER fail.
  */
 
-import { FALLBACK_CORRIDORS, FALLBACK_EVALUATION, FALLBACK_HYDRATION_POIS } from "../data/fallbackData";
+import { 
+  FALLBACK_CORRIDORS, 
+  FALLBACK_EVALUATION, 
+  FALLBACK_HYDRATION_POIS,
+  FALLBACK_ROUTES_BY_CORRIDOR 
+} from "../data/fallbackData";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
@@ -42,6 +47,8 @@ export async function fetchRouteEvaluation(params = {}) {
     pitstopPoiId = null
   } = params;
 
+  const targetCorridor = FALLBACK_CORRIDORS.find(c => c.id === corridorId) || FALLBACK_CORRIDORS[0];
+
   const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}`;
   if (evaluationCache.has(cacheKey)) {
     return evaluationCache.get(cacheKey);
@@ -58,6 +65,8 @@ export async function fetchRouteEvaluation(params = {}) {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
+        origin: targetCorridor.origin.coordinates,
+        destination: targetCorridor.destination.coordinates,
         departure_time: departureTime,
         ambient_temp_c: ambientTempC,
         relative_humidity: humidityPct,
@@ -127,14 +136,16 @@ function simulateDynamicEvaluation({
   const isMorning = hour <= 10.0;
 
   // Selected corridor POIs
+  const activeCorridorId = corridorId || "DELHI_CP_TO_MANDI_HOUSE";
   const corridorPois = FALLBACK_HYDRATION_POIS.filter(
-    p => p.corridor_id === (corridorId || "DELHI_CP_TO_MANDI_HOUSE")
+    p => p.corridor_id === activeCorridorId
   );
 
   const matchedPoi = pitstopPoiId ? FALLBACK_HYDRATION_POIS.find(p => p.id === pitstopPoiId) : null;
 
-  // Shallow copy of fallback routes
-  let clonedRoutes = FALLBACK_EVALUATION.routes.map(r => ({
+  // Retrieve base candidate routes for this specific corridor
+  const rawBaseRoutes = FALLBACK_ROUTES_BY_CORRIDOR[activeCorridorId] || FALLBACK_ROUTES_BY_CORRIDOR.DELHI_CP_TO_MANDI_HOUSE;
+  let clonedRoutes = rawBaseRoutes.map(r => ({
     ...r,
     path_coordinates: [...r.path_coordinates]
   }));
@@ -162,22 +173,13 @@ function simulateDynamicEvaluation({
           ]
         };
       }
-      if (route.id === "route-colonnade-coolest") {
+      if (route.id === "route-colonnade-coolest" || route.id === "route-iit-sda-arcade" || route.id === "route-cc-dariba-haveli") {
         return {
           ...route,
           mode: "SAFEST_DRY",
           is_recommended: true,
           exposure_label: "LOW",
           exposure_color: "#10B981"
-        };
-      }
-      if (route.id === "route-direct-barakhamba") {
-        return {
-          ...route,
-          mode: "FASTEST",
-          is_recommended: false,
-          exposure_label: "MODERATE",
-          exposure_color: "#F59E0B"
         };
       }
       return route;
@@ -187,43 +189,33 @@ function simulateDynamicEvaluation({
     clonedRoutes.forEach(route => {
       if (route.mode === "REJECTED_UNSAFE") return;
 
-      if (route.id === "route-direct-barakhamba") {
+      if (route.id === "route-direct-barakhamba" || route.id === "route-iit-outer-ring" || route.id === "route-cc-netaji-subhash") {
         if (isLateAfternoon) {
-          route.avg_shade_percentage = 62.5;
+          route.avg_shade_percentage = 58.0;
           route.raw_exposure_score = 485.4;
           route.exposure_label = "LOW";
           route.exposure_color = "#10B981";
         } else if (isMorning) {
-          route.avg_shade_percentage = 45.0;
+          route.avg_shade_percentage = 42.0;
           route.raw_exposure_score = 590.2;
           route.exposure_label = "MODERATE";
           route.exposure_color = "#F59E0B";
         } else {
-          route.avg_shade_percentage = 15.2;
-          route.raw_exposure_score = 877.3;
+          route.avg_shade_percentage = 18.0;
+          route.raw_exposure_score = 860.0;
           route.exposure_label = "HIGH";
           route.exposure_color = "#EF4444";
         }
-      } else if (route.id === "route-canopy-kg-marg") {
-        route.avg_shade_percentage = 74.0;
-        route.raw_exposure_score = isLateAfternoon ? 460.0 : 667.5;
-        route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
-        route.exposure_color = isLateAfternoon ? "#10B981" : "#F59E0B";
-      } else if (route.id === "route-colonnade-coolest") {
-        route.avg_shade_percentage = 88.0;
-        route.raw_exposure_score = isLateAfternoon ? 430.0 : 597.7;
-        route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
-        route.exposure_color = "#10B981";
       }
     });
 
-    const fastest = clonedRoutes.find(r => r.id === "route-minto-underpass" && r.mode !== "REJECTED_UNSAFE") ||
-                    clonedRoutes.find(r => r.id === "route-direct-barakhamba");
+    const fastest = clonedRoutes.find(r => r.mode === "FASTEST" && r.mode !== "REJECTED_UNSAFE") ||
+                    clonedRoutes.find(r => r.mode !== "REJECTED_UNSAFE");
     
     if (fastest) {
       clonedRoutes.forEach(r => {
         if (r.mode !== "REJECTED_UNSAFE") {
-          const saved = ((fastest.raw_exposure_score - r.raw_exposure_score) / fastest.raw_exposure_score) * 100;
+          const saved = ((fastest.raw_exposure_score - r.raw_exposure_score) / Math.max(0.1, fastest.raw_exposure_score)) * 100;
           r.exposure_reduction_pct = Math.max(0, Math.round(saved * 10) / 10);
         }
       });
@@ -245,19 +237,23 @@ function simulateDynamicEvaluation({
     });
   }
 
+  const activeCorridor = FALLBACK_CORRIDORS.find(c => c.id === activeCorridorId) || FALLBACK_CORRIDORS[0];
   const timeFormatted = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   let decisionSummary = "";
-  const pitstopNote = matchedPoi ? ` (Includes hydration stop at ${matchedPoi.name})` : "";
+  const pitstopNote = matchedPoi ? ` (Includes hydration waypoint at ${matchedPoi.name})` : "";
+
+  const recommendedRoute = clonedRoutes.find(r => r.is_recommended) || clonedRoutes[0];
 
   if (isMonsoon) {
-    decisionSummary = `⛈️ Monsoon Downpour Advisory (${timeFormatted}): CP Colonnade Arcade & Shaded Lane recommended for 100% covered rain shelters and zero standing water. ⚠️ Minto Sunken Underpass disqualified (1.8m flood hazard).${pitstopNote}`;
+    const floodWarning = clonedRoutes.some(r => r.id === "route-minto-underpass" && r.mode === "REJECTED_UNSAFE")
+      ? " ⚠️ Minto Sunken Underpass disqualified (1.8m flood hazard)."
+      : "";
+    decisionSummary = `⛈️ Monsoon Downpour Advisory (${timeFormatted}): ${recommendedRoute?.name} recommended for covered rain shelters and zero standing water.${floodWarning}${pitstopNote}`;
   } else if (isLateAfternoon) {
-    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): High-rise towers along Barakhamba cast deep canyon shadows. Thermal exposure drops significantly across all corridors.${pitstopNote}`;
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): Lengthening building shadows provide improved thermal protection along ${activeCorridor.name}.${pitstopNote}`;
   } else {
-    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): CP Colonnade & KG Marg routes provide 24% to 32% thermal exposure reduction under mature canopies.${pitstopNote}`;
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): ${recommendedRoute?.name} cuts thermal radiant load under protected urban canopies.${pitstopNote}`;
   }
-
-  const activeCorridor = FALLBACK_CORRIDORS.find(c => c.id === corridorId) || FALLBACK_CORRIDOR;
 
   return {
     ...FALLBACK_EVALUATION,

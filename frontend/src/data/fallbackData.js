@@ -196,31 +196,9 @@ export const FALLBACK_HYDRATION_POIS = [
   }
 ];
 
-export const FALLBACK_EVALUATION = {
-  status: "SUCCESS",
-  corridor_id: "DELHI_CP_TO_MANDI_HOUSE",
-  corridor_name: "Rajiv Chowk (Connaught Place) to Mandi House Metro Hub",
-  active_season: "SUMMER",
-  departure_time: "2026-06-15T13:30:00+05:30",
-  solar_altitude_deg: 73.6,
-  solar_azimuth_deg: 285.1,
-  ambient_temp_c: 43.5,
-  relative_humidity: 42.0,
-  heat_index_c: 59.8,
-  decision_summary: "☀️ Heatwave Advisory (01:30 PM, Sun Altitude: 73.6°): CP Colonnade Arcade & Shaded Lane cuts 31.9% estimated thermal exposure for a modest walk through covered colonnades.",
-  aws_telemetry: {
-    aws_region: "ap-south-1 (Mumbai)",
-    lambda_request_id: "heatroute-req-fallback-prod",
-    cloudwatch_metric: {
-      metric_name: "ThermalStressHoursAvoided",
-      value: 13.98,
-      unit: "StressHours"
-    },
-    dynamodb_queried_pois: 7,
-    execution_latency_ms: 18.4
-  },
-  hydration_pois: FALLBACK_HYDRATION_POIS.filter(p => p.corridor_id === "DELHI_CP_TO_MANDI_HOUSE"),
-  routes: [
+// Fallback candidate routes grouped by corridor
+export const FALLBACK_ROUTES_BY_CORRIDOR = {
+  DELHI_CP_TO_MANDI_HOUSE: [
     {
       id: "route-direct-barakhamba",
       name: "Barakhamba Road Direct",
@@ -285,56 +263,7 @@ export const FALLBACK_EVALUATION = {
           water_nearby: "Mandi House Gate 2 Metro Water Facility at destination"
         }
       ],
-      segments: [
-        {
-          name: "Outer Circle Crossing",
-          length_m: 220,
-          duration_min: 3.1,
-          surface_type: "asphalt",
-          effective_shade: 0.10,
-          shade_source: "urban_geometry",
-          thermal_intensity_rate: 42.1,
-          segment_exposure_score: 130.5,
-          start_coords: [77.2195, 28.6328],
-          end_coords: [77.2215, 28.6320]
-        },
-        {
-          name: "Barakhamba North",
-          length_m: 410,
-          duration_min: 5.7,
-          surface_type: "asphalt",
-          effective_shade: 0.16,
-          shade_source: "urban_geometry",
-          thermal_intensity_rate: 41.2,
-          segment_exposure_score: 234.8,
-          start_coords: [77.2215, 28.6320],
-          end_coords: [77.2248, 28.6305]
-        },
-        {
-          name: "Barakhamba Commercial Tower Corridor",
-          length_m: 460,
-          duration_min: 6.4,
-          surface_type: "asphalt",
-          effective_shade: 0.14,
-          shade_source: "urban_geometry",
-          thermal_intensity_rate: 41.8,
-          segment_exposure_score: 267.5,
-          start_coords: [77.2248, 28.6305],
-          end_coords: [77.2285, 28.6288]
-        },
-        {
-          name: "Barakhamba Approach to Mandi House",
-          length_m: 450,
-          duration_min: 6.2,
-          surface_type: "asphalt",
-          effective_shade: 0.20,
-          shade_source: "urban_geometry",
-          thermal_intensity_rate: 39.5,
-          segment_exposure_score: 244.5,
-          start_coords: [77.2285, 28.6288],
-          end_coords: [77.2345, 28.6258]
-        }
-      ]
+      segments: []
     },
     {
       id: "route-canopy-kg-marg",
@@ -400,56 +329,7 @@ export const FALLBACK_EVALUATION = {
           water_nearby: "Tolstoy Marg Community Water Cooler (Pyaau)"
         }
       ],
-      segments: [
-        {
-          name: "CP KG Radial Link",
-          length_m: 210,
-          duration_min: 2.9,
-          surface_type: "concrete",
-          effective_shade: 0.35,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 34.2,
-          segment_exposure_score: 99.2,
-          start_coords: [77.2195, 28.6328],
-          end_coords: [77.2210, 28.6315]
-        },
-        {
-          name: "KG Marg Tree Avenue (North)",
-          length_m: 480,
-          duration_min: 6.7,
-          surface_type: "concrete",
-          effective_shade: 0.75,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 24.5,
-          segment_exposure_score: 164.1,
-          start_coords: [77.2210, 28.6315],
-          end_coords: [77.2235, 28.6280]
-        },
-        {
-          name: "KG Marg Heritage Canopy Stretch",
-          length_m: 420,
-          duration_min: 5.8,
-          surface_type: "concrete",
-          effective_shade: 0.80,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 23.1,
-          segment_exposure_score: 134.0,
-          start_coords: [77.2235, 28.6280],
-          end_coords: [77.2260, 28.6250]
-        },
-        {
-          name: "Tolstoy Marg Shaded Walkway",
-          length_m: 670,
-          duration_min: 9.3,
-          surface_type: "mixed",
-          effective_shade: 0.65,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 29.1,
-          segment_exposure_score: 270.6,
-          start_coords: [77.2260, 28.6250],
-          end_coords: [77.2345, 28.6258]
-        }
-      ]
+      segments: []
     },
     {
       id: "route-colonnade-coolest",
@@ -524,68 +404,7 @@ export const FALLBACK_EVALUATION = {
           water_nearby: "Mandi House Gate 2 Metro Hydration Point"
         }
       ],
-      segments: [
-        {
-          name: "CP Inner Circle Colonnade",
-          length_m: 350,
-          duration_min: 4.9,
-          surface_type: "paver_colonnade",
-          effective_shade: 1.00,
-          shade_source: "colonnade_roof",
-          thermal_intensity_rate: 18.2,
-          segment_exposure_score: 89.2,
-          start_coords: [77.2195, 28.6328],
-          end_coords: [77.2180, 28.6315]
-        },
-        {
-          name: "Janpath Covered Arcade Link",
-          length_m: 310,
-          duration_min: 4.3,
-          surface_type: "paver_colonnade",
-          effective_shade: 0.95,
-          shade_source: "colonnade_roof",
-          thermal_intensity_rate: 19.4,
-          segment_exposure_score: 83.4,
-          start_coords: [77.2180, 28.6315],
-          end_coords: [77.2198, 28.6290]
-        },
-        {
-          name: "Atul Grove Shaded Pedestrian Lane",
-          length_m: 380,
-          duration_min: 5.3,
-          surface_type: "vegetated",
-          effective_shade: 0.85,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 21.0,
-          segment_exposure_score: 111.3,
-          start_coords: [77.2198, 28.6290],
-          end_coords: [77.2225, 28.6270]
-        },
-        {
-          name: "School Lane Green Belt Path",
-          length_m: 480,
-          duration_min: 6.7,
-          surface_type: "vegetated",
-          effective_shade: 0.80,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 22.8,
-          segment_exposure_score: 152.8,
-          start_coords: [77.2225, 28.6270],
-          end_coords: [77.2270, 28.6265]
-        },
-        {
-          name: "Babar Road Shaded Approach",
-          length_m: 400,
-          duration_min: 5.6,
-          surface_type: "concrete",
-          effective_shade: 0.70,
-          shade_source: "tree_canopy",
-          thermal_intensity_rate: 28.8,
-          segment_exposure_score: 161.0,
-          start_coords: [77.2270, 28.6265],
-          end_coords: [77.2345, 28.6258]
-        }
-      ]
+      segments: []
     },
     {
       id: "route-minto-underpass",
@@ -680,5 +499,396 @@ export const FALLBACK_EVALUATION = {
       steps: [],
       segments: []
     }
+  ],
+
+  DELHI_HAUZ_KHAS_TO_IIT: [
+    {
+      id: "route-iit-outer-ring",
+      name: "Outer Ring Road Arterial Walkway",
+      mode: "FASTEST",
+      is_recommended: false,
+      description: "Shortest arterial path alongside Sri Aurobindo Marg and Outer Ring Road. Wide open 6-lane highway boundary, sparse trees, hot asphalt.",
+      total_length_m: 1580,
+      total_duration_min: 16.0,
+      detour_percent: 0.0,
+      raw_exposure_score: 849.4,
+      exposure_label: "HIGH",
+      exposure_color: "#EF4444",
+      exposure_reduction_pct: 0.0,
+      avg_shade_percentage: 20.6,
+      waterlogging_risk: "MODERATE_PUDDLES",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.90,
+        violations: []
+      },
+      contributing_factors: [
+        "Unshaded highway sidewalk with direct midday sun",
+        "Hot asphalt radiation from heavy traffic flow"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2065, 28.5432],
+        [77.2025, 28.5435],
+        [77.1975, 28.5440],
+        [77.1925, 28.5450]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Exit Hauz Khas Gate 3 and head west along Outer Ring Road pedestrian footpath",
+          distance_m: 420,
+          shade_info: "15% tree cover, direct sun",
+          water_nearby: "Hauz Khas Metro Gate 3 Water ATM"
+        },
+        {
+          step_num: 2,
+          instruction: "Cross Aurobindo Marg signal junction and continue along highway fence",
+          distance_m: 540,
+          shade_info: "20% low hedge shade, high asphalt heat radiation",
+          water_nearby: null
+        },
+        {
+          step_num: 3,
+          instruction: "Arrive at IIT Delhi Main Gate security barrier",
+          distance_m: 620,
+          shade_info: "25% shade near institutional perimeter wall",
+          water_nearby: "IIT Delhi Main Gate Hydration Kiosk"
+        }
+      ],
+      segments: []
+    },
+    {
+      id: "route-iit-rose-garden",
+      name: "Rose Garden & Gulmohar Green Greenway",
+      mode: "COOLEST",
+      is_recommended: true,
+      description: "Scenic parkland route winding through Hauz Khas Rose Garden trails and mature Gulmohar trees into SDA enclave.",
+      total_length_m: 1820,
+      total_duration_min: 18.2,
+      detour_percent: 13.8,
+      raw_exposure_score: 577.1,
+      exposure_label: "LOW",
+      exposure_color: "#10B981",
+      exposure_reduction_pct: 32.1,
+      avg_shade_percentage: 79.9,
+      waterlogging_risk: "NONE",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.98,
+        violations: []
+      },
+      contributing_factors: [
+        "Dense Gulmohar and Bougainvillea tree canopy cuts radiant heat by 60%",
+        "Lush grass lawns absorb thermal insolation instead of radiating heat"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2065, 28.5432],
+        [77.2040, 28.5470],
+        [77.1985, 28.5480],
+        [77.1950, 28.5465],
+        [77.1925, 28.5450]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Turn north into the Hauz Khas Rose Garden shaded pedestrian entrance",
+          distance_m: 450,
+          shade_info: "80% deep park tree cover, grass lawns absorb thermal radiation",
+          water_nearby: "Garden Drinking Fountain"
+        },
+        {
+          step_num: 2,
+          instruction: "Follow stone paver walking path under continuous Gulmohar canopy",
+          distance_m: 580,
+          shade_info: "85% dense overlapping tree canopy",
+          water_nearby: null
+        },
+        {
+          step_num: 3,
+          instruction: "Exit park gate into quiet SDA green residential lane",
+          distance_m: 430,
+          shade_info: "75% tree shade, low traffic paver surface",
+          water_nearby: "SDA Commercial Market Public Cooler (120m south)"
+        },
+        {
+          step_num: 4,
+          instruction: "Cross shaded university lane directly into IIT Delhi Main Gate",
+          distance_m: 360,
+          shade_info: "70% shade from university campus trees",
+          water_nearby: "IIT Delhi Main Gate Hydration Kiosk"
+        }
+      ],
+      segments: []
+    },
+    {
+      id: "route-iit-sda-arcade",
+      name: "SDA Market Covered Arcade & Shaded Lane",
+      mode: "BALANCED",
+      is_recommended: false,
+      description: "Passes through the covered pedestrian verandas of SDA Market, offering commercial canopies, water kiosks, and cool stone arcades.",
+      total_length_m: 1690,
+      total_duration_min: 17.2,
+      detour_percent: 7.5,
+      raw_exposure_score: 611.4,
+      exposure_label: "MODERATE",
+      exposure_color: "#F59E0B",
+      exposure_reduction_pct: 28.0,
+      avg_shade_percentage: 69.9,
+      waterlogging_risk: "NONE",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.95,
+        violations: []
+      },
+      contributing_factors: [
+        "Covered commercial market verandas provide 90% rain & sun shielding",
+        "Convenient access to SDA market drinking water coolers"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2065, 28.5432],
+        [77.2015, 28.5448],
+        [77.1970, 28.5455],
+        [77.1925, 28.5450]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Walk along Sri Aurobindo Marg shaded service lane",
+          distance_m: 510,
+          shade_info: "50% tree shade",
+          water_nearby: "Hauz Khas Metro ATM"
+        },
+        {
+          step_num: 2,
+          instruction: "Walk through SDA commercial market pedestrian covered arcades",
+          distance_m: 530,
+          shade_info: "90% covered awnings & building shadows; dry during monsoon",
+          water_nearby: "SDA Commercial Market Public Cooler"
+        },
+        {
+          step_num: 3,
+          instruction: "Cross quiet connector road directly to IIT Main Gate",
+          distance_m: 650,
+          shade_info: "60% tree cover",
+          water_nearby: "IIT Delhi Main Gate Hydration Kiosk"
+        }
+      ],
+      segments: []
+    }
+  ],
+
+  DELHI_CHANDNI_CHOWK: [
+    {
+      id: "route-cc-heritage-mall",
+      name: "Chandni Chowk Pedestrian Heritage Mall",
+      mode: "FASTEST",
+      is_recommended: false,
+      description: "Pedestrianized red sandstone corridor with broad walking promenades, water misting poles, and electric rickshaw lanes.",
+      total_length_m: 1350,
+      total_duration_min: 13.8,
+      detour_percent: 0.0,
+      raw_exposure_score: 595.3,
+      exposure_label: "MODERATE",
+      exposure_color: "#F59E0B",
+      exposure_reduction_pct: 0.0,
+      avg_shade_percentage: 42.0,
+      waterlogging_risk: "LOW",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.95,
+        violations: []
+      },
+      contributing_factors: [
+        "Car-free pedestrian boulevard with sandstone paving",
+        "Public water misting poles operate along central median"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2285, 28.6575],
+        [77.2325, 28.6568],
+        [77.2370, 28.6564],
+        [77.2410, 28.6560]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Exit Chandni Chowk Metro Gate 1 onto the central pedestrian mall",
+          distance_m: 400,
+          shade_info: "40% umbrella and tree shade, red sandstone paving",
+          water_nearby: "Chandni Chowk Metro Concourse Hydration Point"
+        },
+        {
+          step_num: 2,
+          instruction: "Pass Sis Ganj Sahib Gurudwara and Fountain Chowk",
+          distance_m: 450,
+          shade_info: "50% shade, heritage building facade shadows",
+          water_nearby: "Gurudwara Sis Ganj Sahib Free Chhabil"
+        },
+        {
+          step_num: 3,
+          instruction: "Walk past Gauri Shankar Temple towards Red Fort Lahori Gate plaza",
+          distance_m: 500,
+          shade_info: "35% shade, wide open pedestrian plaza",
+          water_nearby: "Red Fort Plaza Tourist Drinking Fountain"
+        }
+      ],
+      segments: []
+    },
+    {
+      id: "route-cc-dariba-haveli",
+      name: "Dariba Kalan & Kinari Bazaar Haveli Canyons",
+      mode: "COOLEST",
+      is_recommended: true,
+      description: "Historic 300-year-old narrow urban street canyons (4m wide). Deep haveli building overhangs provide complete all-day shade and rain shielding.",
+      total_length_m: 1520,
+      total_duration_min: 16.2,
+      detour_percent: 17.4,
+      raw_exposure_score: 476.3,
+      exposure_label: "LOW",
+      exposure_color: "#10B981",
+      exposure_reduction_pct: 20.0,
+      avg_shade_percentage: 88.5,
+      waterlogging_risk: "NONE",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.95,
+        violations: []
+      },
+      contributing_factors: [
+        "Narrow 4m street canyons with 3-storey havelis block 90% direct sunlight",
+        "Overhead textile awnings shield pedestrians from sun and rain"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2285, 28.6575],
+        [77.2310, 28.6550],
+        [77.2360, 28.6545],
+        [77.2395, 28.6552],
+        [77.2410, 28.6560]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Divert south into Dariba Kalan narrow jewelry street canyon",
+          distance_m: 380,
+          shade_info: "92% continuous shadow from 3-storey traditional havelis",
+          water_nearby: "Kinari Bazaar Heritage Water Kiosk"
+        },
+        {
+          step_num: 2,
+          instruction: "Wind through Kinari Bazaar covered awning corridor",
+          distance_m: 520,
+          shade_info: "95% shade and rain cover under overhead fabric & wooden chhatris",
+          water_nearby: null
+        },
+        {
+          step_num: 3,
+          instruction: "Turn towards Jama Masjid North Gate shaded alley",
+          distance_m: 340,
+          shade_info: "85% shade from sandstone walls",
+          water_nearby: null
+        },
+        {
+          step_num: 4,
+          instruction: "Emerge onto Subhash Park shaded perimeter to Red Fort Lahori Gate",
+          distance_m: 280,
+          shade_info: "70% shade from mature Banyan trees",
+          water_nearby: "Red Fort Plaza Tourist Drinking Fountain"
+        }
+      ],
+      segments: []
+    },
+    {
+      id: "route-cc-netaji-subhash",
+      name: "Netaji Subhash Marg Arterial Road",
+      mode: "BALANCED",
+      is_recommended: false,
+      description: "Broad arterial road skirting the eastern boundary. Heavy vehicular traffic, asphalt blacktop, high solar reflection.",
+      total_length_m: 1640,
+      total_duration_min: 16.8,
+      detour_percent: 21.7,
+      raw_exposure_score: 849.1,
+      exposure_label: "HIGH",
+      exposure_color: "#EF4444",
+      exposure_reduction_pct: 0.0,
+      avg_shade_percentage: 26.5,
+      waterlogging_risk: "MODERATE_PUDDLES",
+      safety: {
+        passed_safety_filter: true,
+        safety_verdict: "VERIFIED_SAFE",
+        safety_score: 0.88,
+        violations: []
+      },
+      contributing_factors: [
+        "Heavy vehicular traffic generates hot exhaust thermal bubble",
+        "Wide asphalt carriageway radiates intense stored heat"
+      ],
+      confidence: "HIGH",
+      path_coordinates: [
+        [77.2285, 28.6575],
+        [77.2330, 28.6590],
+        [77.2380, 28.6580],
+        [77.2410, 28.6560]
+      ],
+      steps: [
+        {
+          step_num: 1,
+          instruction: "Walk north towards Old Delhi Railway Station road link",
+          distance_m: 450,
+          shade_info: "20% shade, open traffic road",
+          water_nearby: null
+        },
+        {
+          step_num: 2,
+          instruction: "Follow Netaji Subhash Marg sidewalk along Red Fort moat perimeter",
+          distance_m: 690,
+          shade_info: "30% tree shade from roadside neem trees",
+          water_nearby: null
+        },
+        {
+          step_num: 3,
+          instruction: "Arrive at Red Fort Main Entrance Gates",
+          distance_m: 500,
+          shade_info: "25% shade",
+          water_nearby: "Red Fort Plaza Tourist Drinking Fountain"
+        }
+      ],
+      segments: []
+    }
   ]
+};
+
+export const FALLBACK_EVALUATION = {
+  status: "SUCCESS",
+  corridor_id: "DELHI_CP_TO_MANDI_HOUSE",
+  corridor_name: "Rajiv Chowk (Connaught Place) to Mandi House Metro Hub",
+  active_season: "SUMMER",
+  departure_time: "2026-06-15T13:30:00+05:30",
+  solar_altitude_deg: 73.6,
+  solar_azimuth_deg: 285.1,
+  ambient_temp_c: 43.5,
+  relative_humidity: 42.0,
+  heat_index_c: 59.8,
+  decision_summary: "☀️ Heatwave Advisory (01:30 PM, Sun Altitude: 73.6°): CP Colonnade Arcade & Shaded Lane cuts 31.9% estimated thermal exposure for a modest walk through covered colonnades.",
+  aws_telemetry: {
+    aws_region: "ap-south-1 (Mumbai)",
+    lambda_request_id: "heatroute-req-fallback-prod",
+    cloudwatch_metric: {
+      metric_name: "ThermalStressHoursAvoided",
+      value: 13.98,
+      unit: "StressHours"
+    },
+    dynamodb_queried_pois: 7,
+    execution_latency_ms: 18.4
+  },
+  hydration_pois: FALLBACK_HYDRATION_POIS.filter(p => p.corridor_id === "DELHI_CP_TO_MANDI_HOUSE"),
+  routes: FALLBACK_ROUTES_BY_CORRIDOR.DELHI_CP_TO_MANDI_HOUSE
 };

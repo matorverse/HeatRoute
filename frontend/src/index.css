@@ -922,6 +922,176 @@ body {
   width: fit-content;
 }
 
+/* Thermal Stress Health Advisory Banner */
+.health-advisory-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.77rem;
+  line-height: 1.4;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+}
+
+.health-advisory-banner.danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.16) 0%, rgba(185, 28, 28, 0.08) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FECACA;
+}
+
+.health-advisory-banner.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(180, 83, 9, 0.08) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #FDE68A;
+}
+
+.health-advisory-banner.monsoon {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.16) 0%, rgba(30, 58, 138, 0.08) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  color: #BAE6FD;
+}
+
+/* Audio Speech Advisory Button */
+.audio-advisory-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  background: rgba(249, 115, 22, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  color: #FDBA74;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.audio-advisory-btn:hover {
+  background: rgba(249, 115, 22, 0.28);
+  color: #FFF;
+  border-color: rgba(249, 115, 22, 0.6);
+}
+
+.audio-advisory-btn.playing {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #FCA5A5;
+  animation: pulse-audio 1.5s infinite;
+}
+
+@keyframes pulse-audio {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Sidebar Hydration Stations Drawer */
+.hydration-stations-drawer {
+  margin: 10px 24px 4px 24px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hydration-station-card {
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.hydration-station-card:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.station-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.station-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.station-type-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-hydration);
+  background: rgba(56, 189, 248, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.station-features-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.station-feature-badge {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.station-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.station-accessibility {
+  font-size: 0.7rem;
+  color: #10B981;
+  font-weight: 600;
+}
+
+.station-waypoint-btn {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.station-waypoint-btn:hover {
+  background: rgba(56, 189, 248, 0.28);
+  color: #FFF;
+}
+
+.station-waypoint-btn.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #6EE7B7;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 900px) {
   .app-container {
@@ -936,4 +1106,5 @@ body {
     height: 40vh;
   }
 }
+
 
