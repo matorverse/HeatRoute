@@ -1,6 +1,12 @@
 import React, { useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+
+// Set web worker explicitly for Vite bundling
+if (typeof maplibregl.setWorkerUrl === "function") {
+  maplibregl.setWorkerUrl(maplibreWorkerUrl);
+}
 
 const DARK_MAP_STYLE = {
   version: 8,
@@ -104,14 +110,41 @@ export default function MapView({
 
   // Update Route Layers when routes or selectedRouteId changes
   useEffect(() => {
-    if (!mapRef.current || !mapRef.current.isStyleLoaded()) return;
-    updateRouteLayers(mapRef.current, routes, selectedRouteId);
+    if (!mapRef.current) return;
+    const applyRoutes = () => {
+      if (mapRef.current && mapRef.current.isStyleLoaded()) {
+        updateRouteLayers(mapRef.current, routes, selectedRouteId);
+      }
+    };
+
+    if (mapRef.current.isStyleLoaded()) {
+      applyRoutes();
+    } else {
+      mapRef.current.once("load", applyRoutes);
+      mapRef.current.on("styledata", applyRoutes);
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off("styledata", applyRoutes);
+      }
+    };
   }, [routes, selectedRouteId]);
 
   // Update Hydration POIs
   useEffect(() => {
     if (!mapRef.current) return;
-    updatePoiMarkers(mapRef.current, hydrationPois, showHydration);
+    const applyPois = () => {
+      if (mapRef.current && mapRef.current.isStyleLoaded()) {
+        updatePoiMarkers(mapRef.current, hydrationPois, showHydration);
+      }
+    };
+
+    if (mapRef.current.isStyleLoaded()) {
+      applyPois();
+    } else {
+      mapRef.current.once("load", applyPois);
+    }
   }, [hydrationPois, showHydration]);
 
   function updateRouteLayers(map, routeList, activeId) {
@@ -204,6 +237,18 @@ export default function MapView({
 
     // Ensure Start and End markers are in place
     renderOriginDestinationMarkers(map);
+
+    // Smoothly focus on active corridor once loaded
+    if (!map._hasFitBounds && features.length > 0) {
+      map._hasFitBounds = true;
+      map.flyTo({
+        center: [77.2270, 28.6293],
+        zoom: 14.6,
+        pitch: 35,
+        bearing: -15,
+        duration: 1000
+      });
+    }
   }
 
   function renderOriginDestinationMarkers(map) {
