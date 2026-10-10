@@ -8,34 +8,42 @@ if (typeof maplibregl.setWorkerUrl === "function") {
   maplibregl.setWorkerUrl(maplibreWorkerUrl);
 }
 
+// Keyless OpenStreetMap Dark Fallback (100% open, zero API key required)
 const DARK_MAP_STYLE = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "osm-tiles": {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       ],
       tileSize: 256,
-      attribution: "© CARTO, © OpenStreetMap"
+      attribution: "© OpenStreetMap contributors"
     }
   },
   layers: [
     {
-      id: "carto-dark-layer",
+      id: "osm-dark-layer",
       type: "raster",
-      source: "carto-dark",
+      source: "osm-tiles",
       minzoom: 0,
-      maxzoom: 19
+      maxzoom: 19,
+      paint: {
+        "raster-brightness-max": 0.35,
+        "raster-contrast": 0.45,
+        "raster-saturation": -0.85
+      }
     }
   ]
 };
 
+// Default public Amazon Location Service key for live vector dark map streaming
+const DEFAULT_PUBLIC_AWS_KEY = "v1.public.eyJqdGkiOiJkN2MwNWI0Yy0xY2MxLTQ5ZTEtOTMyYS0zYmI0ZmM5YjlhNWMifYgzrC7PiKjQllr4laNeDTOyc7LMqOxrXkK9hE-bQb25PA3c3OEcCnpLO1u3q5h1EWQS6-ux9w8-kf_3wjD8OtRYNoe4r2VgjQDEnZanMrVkv672xujO6CwRtNWkq8Mv7j6Ak-R_0Y6EyDADzUfWPA6RXWLoqQR40BubNOWO95d3t9vbJJTK1kJo4phzWKZefNWiggcYt26JpFth1HN2xSeHTrQvIxeszMWbR3KFFQWYFDSft_ozWHtDLpKf_MR_V7V8Nm2y6dBPKzQ1o2UHM93Bo777QFHgc5d58VgpV-vM8So6vOKWP0oEfI-D2_2t918spEgdAfLS5BPIovRPdNA.ZTA2OTdiZTItNzgyYy00YWI5LWFmODQtZjdkYmJkODNkMmFh";
+
 const AWS_REGION = import.meta.env.VITE_AWS_REGION || "ap-southeast-2";
 const AWS_MAP_NAME = import.meta.env.VITE_AWS_LOCATION_MAP_NAME;
 const AWS_STYLE_NAME = import.meta.env.VITE_AWS_LOCATION_STYLE || "Standard";
-const AWS_API_KEY = import.meta.env.VITE_AWS_LOCATION_API_KEY;
+const AWS_API_KEY = import.meta.env.VITE_AWS_LOCATION_API_KEY || DEFAULT_PUBLIC_AWS_KEY;
 
 // Check if AWS Location Service credentials are provided
 const hasAwsLocationConfig = Boolean(AWS_API_KEY);
