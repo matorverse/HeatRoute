@@ -26,6 +26,16 @@ const DARK_MAP_STYLE = {
   ]
 };
 
+const AWS_REGION = import.meta.env.VITE_AWS_REGION || "ap-south-1";
+const AWS_MAP_NAME = import.meta.env.VITE_AWS_LOCATION_MAP_NAME;
+const AWS_API_KEY = import.meta.env.VITE_AWS_LOCATION_API_KEY;
+
+// Check if AWS Location Service credentials are provided
+const hasAwsLocationConfig = Boolean(AWS_MAP_NAME && AWS_API_KEY);
+const AWS_STYLE_URL = hasAwsLocationConfig
+  ? `https://maps.geo.${AWS_REGION}.amazonaws.com/maps/v0/maps/${AWS_MAP_NAME}/style-descriptor?key=${AWS_API_KEY}`
+  : null;
+
 export default function MapView({
   routes = [],
   selectedRouteId,
@@ -39,18 +49,38 @@ export default function MapView({
   const mapRef = useRef(null);
   const markersRef = useRef([]);
 
-  // Initialize MapLibre
+  // Initialize MapLibre with Amazon Location Service or Carto Fallback
   useEffect(() => {
     if (mapRef.current) return;
 
+    const initialStyle = AWS_STYLE_URL || DARK_MAP_STYLE;
+
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: DARK_MAP_STYLE,
+      style: initialStyle,
       center: [77.2270, 28.6293], // Central Delhi (CP - Mandi House)
       zoom: 14.5,
       pitch: 35,
       bearing: -15,
-      attributionControl: false
+      attributionControl: false,
+      transformRequest: (url) => {
+        // Automatically attach API Key to AWS Location Service tile/sprite/glyph requests
+        if (AWS_API_KEY && url.includes("amazonaws.com") && !url.includes("key=")) {
+          const sep = url.includes("?") ? "&" : "?";
+          return { url: `${url}${sep}key=${AWS_API_KEY}` };
+        }
+        return { url };
+      }
+    });
+
+    // Handle fallback if AWS style fails to load (e.g., expired key or network blockage)
+    map.on("error", (e) => {
+      if (AWS_STYLE_URL && (e?.error?.message?.includes("style") || e?.error?.status === 403)) {
+        console.warn("Notice: AWS Location Service style load issue, falling back to local base style:", e);
+        try {
+          map.setStyle(DARK_MAP_STYLE);
+        } catch (_) {}
+      }
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
@@ -234,6 +264,19 @@ export default function MapView({
     <div className="map-view-wrapper">
       <div id="maplibre-canvas" ref={mapContainerRef} />
       
+      {/* Map Engine Provider Badge */}
+      <div className="map-floating-badge" style={{ left: "20px", right: "auto", padding: "8px 14px" }}>
+        <span style={{ fontSize: "1rem" }}>{hasAwsLocationConfig ? "☁️" : "🗺️"}</span>
+        <div>
+          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Map Engine
+          </div>
+          <div style={{ fontSize: "0.78rem", fontWeight: "700", color: hasAwsLocationConfig ? "#FF9900" : "var(--color-primary)" }}>
+            {hasAwsLocationConfig ? `AWS Location (${AWS_MAP_NAME})` : "Carto Dark (Fallback)"}
+          </div>
+        </div>
+      </div>
+
       {/* Real-time Solar Angle Floating Badge */}
       <div className="map-floating-badge">
         <span className="floating-sun-icon">☀️</span>

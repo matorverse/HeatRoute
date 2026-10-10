@@ -77,25 +77,27 @@ Extreme outdoor heat requires physical recovery. HeatRoute integrates active dri
 
 ```text
                [ React + MapLibre GL Web Client ]
-                               │
-                               ▼
-                    [ Amazon API Gateway ]
-                               │
-                               ▼
-                 [ AWS Lambda (Python 3.11) ]
-                 ├── Solar Geometry & Azimuth Engine
-                 ├── Pedestrian Safety Rules Engine
-                 └── Biometeorological RTE Scoring
-                               │
-         ┌─────────────────────┼─────────────────────┐
-         ▼                     ▼                     ▼
-   [ Amazon S3 ]       [ Amazon DynamoDB ]   [ Amazon CloudWatch ]
-   - Fallback route    - Verified Hydration  - Metric: ThermalStress-
-     cache GeoJSON       POIs (Pyaus, ATMs)    HoursAvoided (Telemetry)
-   - 100% Demo Uptime  - Low latency lookup  - Lambda Execution Latency
+                    │                   │
+                    │ (Vector Tiles)     │ (REST API)
+                    ▼                   ▼
+         [ Amazon Location Service ] [ Amazon API Gateway ]
+         - Dark Navigation Vector             │
+           Tiles (HeatRouteMap)               ▼
+                                 [ AWS Lambda (Python 3.11) ]
+                                 ├── Solar Geometry & Azimuth Engine
+                                 ├── Pedestrian Safety Rules Engine
+                                 └── Biometeorological RTE Scoring
+                                               │
+                         ┌─────────────────────┼─────────────────────┐
+                         ▼                     ▼                     ▼
+                   [ Amazon S3 ]       [ Amazon DynamoDB ]   [ Amazon CloudWatch ]
+                   - Fallback route    - Verified Hydration  - Metric: ThermalStress-
+                     cache GeoJSON       POIs (Pyaus, ATMs)    HoursAvoided (Telemetry)
+                   - 100% Demo Uptime  - Low latency lookup  - Lambda Execution Latency
 ```
 
 ### Demonstrable AWS Services:
+* **Amazon Location Service (Maps):** Streams high-performance dark navigation vector tiles via MapLibre GL and tokenized API key authentication (`HeatRouteMap`).
 * **AWS Lambda (Python 3.11 + Mangum):** Executes stateless biometeorological calculations at sub-30ms latency.
 * **Amazon API Gateway:** Exposes managed REST endpoints with CORS and rate throttling.
 * **Amazon DynamoDB:** Stores active hydration and rest recovery locations (`HeatRoute-Hydration-POIs`).

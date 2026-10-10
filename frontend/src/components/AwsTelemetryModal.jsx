@@ -1,8 +1,12 @@
 import React from "react";
-import { X, Cloud, Activity, Database, Server, HardDrive } from "lucide-react";
+import { X, Cloud, Activity, Database, Server, HardDrive, Map } from "lucide-react";
 
 export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCloud }) {
   if (!isOpen) return null;
+
+  const hasLocationConfig = Boolean(
+    import.meta.env.VITE_AWS_LOCATION_MAP_NAME && import.meta.env.VITE_AWS_LOCATION_API_KEY
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose} id="aws-telemetry-modal">
@@ -22,6 +26,25 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
         </div>
 
         <div className="aws-spec-grid">
+          <div className="aws-card-row">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <Map color="#FF9900" size={18} />
+              <div>
+                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-main)" }}>
+                  Amazon Location Service (Maps)
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                  Resource: {import.meta.env.VITE_AWS_LOCATION_MAP_NAME || "HeatRouteMap"} (Vector Tiles)
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontSize: "0.82rem", fontWeight: "700", color: hasLocationConfig ? "#10B981" : "#F59E0B" }}>
+                {hasLocationConfig ? "AWS Vector Active" : "Fallback Active"}
+              </span>
+              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{hasLocationConfig ? "MapLibre GL" : "Carto raster"}</div>
+            </div>
+          </div>
           <div className="aws-card-row">
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Server color="#FF9900" size={18} />

@@ -173,6 +173,29 @@ Resources:
           ]
         }
 
+  # ========================================================
+  # 6. Amazon Location Service: Map & API Key
+  # ========================================================
+  HeatRouteMap:
+    Type: AWS::Location::Map
+    Properties:
+      MapName: HeatRouteMap
+      Configuration:
+        Style: VectorHereExploreDark
+      Description: "HeatRoute dark navigation vector map style for pedestrian microclimate rendering"
+
+  HeatRouteMapApiKey:
+    Type: AWS::Location::APIKey
+    Properties:
+      KeyName: HeatRouteMapApiKey
+      Description: "API key for frontend MapLibre GL tile access"
+      NoExpiry: true
+      Restrictions:
+        AllowActions:
+          - geo:GetMap*
+        AllowResources:
+          - !GetAtt HeatRouteMap.Arn
+
 Outputs:
   ApiGatewayEndpoint:
     Description: Public API Gateway Endpoint URL for HeatRoute
@@ -183,3 +206,10 @@ Outputs:
   DynamoDBTableName:
     Description: Hydration POIs DynamoDB Table
     Value: !Ref HydrationPOIsTable
+  MapName:
+    Description: Amazon Location Service Map Name
+    Value: !Ref HeatRouteMap
+  MapApiKey:
+    Description: Amazon Location Service API Key
+    Value: !GetAtt HeatRouteMapApiKey.Key
+
