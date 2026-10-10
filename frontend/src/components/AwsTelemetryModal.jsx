@@ -4,9 +4,10 @@ import { X, Cloud, Activity, Database, Server, HardDrive, Map } from "lucide-rea
 export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCloud }) {
   if (!isOpen) return null;
 
-  const hasLocationConfig = Boolean(
-    import.meta.env.VITE_AWS_LOCATION_MAP_NAME && import.meta.env.VITE_AWS_LOCATION_API_KEY
-  );
+  const hasLocationConfig = Boolean(import.meta.env.VITE_AWS_LOCATION_API_KEY);
+  const locationResourceLabel = import.meta.env.VITE_AWS_LOCATION_MAP_NAME
+    ? import.meta.env.VITE_AWS_LOCATION_MAP_NAME
+    : `${import.meta.env.VITE_AWS_LOCATION_STYLE || "Standard"} Dark (v2)`;
 
   return (
     <div className="modal-overlay" onClick={onClose} id="aws-telemetry-modal">
@@ -34,7 +35,7 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
                   Amazon Location Service (Maps)
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                  Resource: {import.meta.env.VITE_AWS_LOCATION_MAP_NAME || "HeatRouteMap"} (Vector Tiles)
+                  Resource: {locationResourceLabel} (Vector Tiles)
                 </div>
               </div>
             </div>
@@ -127,9 +128,9 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
         </div>
 
         <div style={{ marginTop: "18px", padding: "10px 14px", background: "rgba(15, 23, 42, 0.8)", borderRadius: "8px", border: "1px solid var(--border-subtle)", fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Region: <strong>ap-south-1 (Mumbai)</strong></span>
-          <span style={{ color: isLiveCloud ? "#10B981" : "#F59E0B" }}>
-            ● {isLiveCloud ? "Live AWS Connection" : "Deterministic Fallback Active"}
+          <span>AWS Region: <strong>{import.meta.env.VITE_AWS_REGION || "ap-southeast-2"}</strong></span>
+          <span style={{ color: isLiveCloud || hasLocationConfig ? "#10B981" : "#F59E0B" }}>
+            ● {hasLocationConfig ? "AWS Location Live" : (isLiveCloud ? "Live AWS Connection" : "Deterministic Fallback")}
           </span>
         </div>
       </div>

@@ -26,14 +26,19 @@ const DARK_MAP_STYLE = {
   ]
 };
 
-const AWS_REGION = import.meta.env.VITE_AWS_REGION || "ap-south-1";
+const AWS_REGION = import.meta.env.VITE_AWS_REGION || "ap-southeast-2";
 const AWS_MAP_NAME = import.meta.env.VITE_AWS_LOCATION_MAP_NAME;
+const AWS_STYLE_NAME = import.meta.env.VITE_AWS_LOCATION_STYLE || "Standard";
 const AWS_API_KEY = import.meta.env.VITE_AWS_LOCATION_API_KEY;
 
 // Check if AWS Location Service credentials are provided
-const hasAwsLocationConfig = Boolean(AWS_MAP_NAME && AWS_API_KEY);
+const hasAwsLocationConfig = Boolean(AWS_API_KEY);
+
+// Support both AWS Location V2 (Standard/Monochrome vector tiles) and V0 (legacy named map)
 const AWS_STYLE_URL = hasAwsLocationConfig
-  ? `https://maps.geo.${AWS_REGION}.amazonaws.com/maps/v0/maps/${AWS_MAP_NAME}/style-descriptor?key=${AWS_API_KEY}`
+  ? (AWS_MAP_NAME
+      ? `https://maps.geo.${AWS_REGION}.amazonaws.com/maps/v0/maps/${AWS_MAP_NAME}/style-descriptor?key=${AWS_API_KEY}`
+      : `https://maps.geo.${AWS_REGION}.amazonaws.com/v2/styles/${AWS_STYLE_NAME}/descriptor?key=${AWS_API_KEY}&color-scheme=Dark`)
   : null;
 
 export default function MapView({
@@ -272,7 +277,7 @@ export default function MapView({
             Map Engine
           </div>
           <div style={{ fontSize: "0.78rem", fontWeight: "700", color: hasAwsLocationConfig ? "#FF9900" : "var(--color-primary)" }}>
-            {hasAwsLocationConfig ? `AWS Location (${AWS_MAP_NAME})` : "Carto Dark (Fallback)"}
+            {hasAwsLocationConfig ? `AWS Location (${AWS_MAP_NAME || AWS_STYLE_NAME})` : "Carto Dark (Fallback)"}
           </div>
         </div>
       </div>
