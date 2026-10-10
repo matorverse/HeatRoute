@@ -1669,21 +1669,609 @@ html, body {
   }
 }
 
-@media (max-width: 768px) {
-  .hud-topbar {
-    left: 10px;
-    right: 10px;
-    top: 10px;
+/* ==========================================================================
+   MOBILE-FIRST SPATIAL BOTTOM SHEET & DUAL-MODE LAYOUT
+   ========================================================================== */
+
+/* Mobile Topbar */
+.hud-topbar.mobile-topbar {
+  top: max(10px, env(safe-area-inset-top));
+  left: 10px;
+  right: 10px;
+  height: 54px;
+  padding: 0 12px;
+  border-radius: var(--radius-lg);
+  background: rgba(11, 17, 30, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 45;
+}
+
+.mobile-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-quick-season-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-quick-season-btn.summer {
+  background: rgba(255, 107, 43, 0.18);
+  border: 1px solid rgba(255, 107, 43, 0.45);
+  color: #FBBF24;
+}
+
+.mobile-quick-season-btn.monsoon {
+  background: rgba(6, 182, 212, 0.18);
+  border: 1px solid rgba(6, 182, 212, 0.45);
+  color: #38BDF8;
+}
+
+.mobile-quick-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-quick-pick-btn.active {
+  background: linear-gradient(135deg, #FF6B2B 0%, #F59E0B 100%);
+  border-color: #FF8C5A;
+  color: #FFFFFF;
+  box-shadow: 0 0 12px rgba(255, 107, 43, 0.5);
+}
+
+/* Mobile Draggable / Tappable 3-Snap Bottom Sheet */
+.mobile-bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(11, 17, 30, 0.95);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: height 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+/* Snap State Heights */
+.mobile-bottom-sheet.sheet-peek {
+  height: 110px;
+  max-height: 110px;
+}
+
+.mobile-bottom-sheet.sheet-half {
+  height: 52vh;
+  max-height: 52vh;
+}
+
+.mobile-bottom-sheet.sheet-full {
+  height: 88vh;
+  max-height: 88vh;
+}
+
+/* Draggable Grip Handle */
+.mobile-sheet-handle-zone {
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.mobile-sheet-handle-zone:active {
+  cursor: grabbing;
+}
+
+.mobile-sheet-handle-bar {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.3);
+  transition: background 0.2s ease, width 0.2s ease;
+}
+
+.mobile-sheet-handle-zone:hover .mobile-sheet-handle-bar {
+  background: rgba(255, 255, 255, 0.5);
+  width: 52px;
+}
+
+/* 1. Peek Summary Bar */
+.mobile-sheet-peek-bar {
+  height: 74px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.peek-left-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.peek-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.peek-mode-pill {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.peek-eta-val,
+.peek-shade-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.peek-route-name {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peek-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.peek-audio-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 107, 43, 0.18);
+  border: 1px solid rgba(255, 107, 43, 0.5);
+  color: #FDBA74;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.peek-audio-btn:hover {
+  background: rgba(255, 107, 43, 0.35);
+  color: #FFFFFF;
+  transform: scale(1.05);
+}
+
+.peek-audio-btn.playing {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #FCA5A5;
+}
+
+.peek-expand-chevron {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.peek-expand-chevron:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+}
+
+/* 2. Expanded Scrollable Sheet Body */
+.mobile-sheet-scrollable-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Corridor Endpoints Header */
+.mobile-corridor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobile-endpoints-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  flex: 1;
+}
+
+.mobile-endpoint-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.mobile-endpoint-dot.origin {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+  flex-shrink: 0;
+}
+
+.mobile-endpoint-dot.dest {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #EF4444;
+  box-shadow: 0 0 6px #EF4444;
+  flex-shrink: 0;
+}
+
+.mobile-arrow {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.mobile-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glass);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Corridor Selection & Custom Planner Row */
+.mobile-corridor-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-select-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  height: 42px;
+  gap: 8px;
+}
+
+.mobile-corridor-dropdown {
+  width: 100%;
+  background: transparent;
+  color: #F8FAFC;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 18px;
+  cursor: pointer;
+}
+
+.mobile-dropdown-caret {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+
+.mobile-custom-active-tag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-md);
+  padding: 0 10px;
+  height: 42px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #FDE68A;
+}
+
+.mobile-reset-btn {
+  margin-left: auto;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.mobile-pick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 107, 43, 0.15);
+  border: 1px solid rgba(255, 107, 43, 0.45);
+  color: #FF9900;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.mobile-pick-btn.active {
+  background: linear-gradient(135deg, #FF6B2B 0%, #F59E0B 100%);
+  border-color: #FF8C5A;
+  color: #FFFFFF;
+}
+
+/* Hazard Segmented Buttons */
+.mobile-hazard-segmented {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.mobile-hazard-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-hazard-btn.active-summer {
+  background: linear-gradient(135deg, rgba(255, 107, 43, 0.3) 0%, rgba(251, 191, 36, 0.2) 100%);
+  border-color: rgba(255, 107, 43, 0.55);
+  color: #FBBF24;
+  box-shadow: 0 0 14px rgba(255, 107, 43, 0.3);
+}
+
+.mobile-hazard-btn.active-monsoon {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+  border-color: rgba(6, 182, 212, 0.55);
+  color: #38BDF8;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.3);
+}
+
+/* Mobile Tabs */
+.mobile-sheet-tab-row {
+  display: flex;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.75);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.mobile-tab-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+/* Mobile Route Cards List */
+.mobile-route-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-hydration-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-solar-tab-wrapper {
+  background: rgba(15, 23, 42, 0.7);
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass);
+}
+
+.mobile-pitstop-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(5, 150, 105, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  color: #A7F3D0;
+}
+
+.mobile-pitstop-clear-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.mobile-advisory {
+  font-size: 0.76rem;
+  padding: 10px 12px;
+}
+
+.mobile-decision {
+  font-size: 0.76rem;
+  padding: 10px 12px;
+}
+
+/* Mobile Footer */
+.mobile-sheet-footer {
+  padding-top: 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-footer-aws-btn {
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-glass-bright);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-footer-aws-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* MapLibre Controls on Mobile */
+@media (max-width: 767px) {
+  .maplibregl-ctrl-top-right {
+    top: 68px !important;
+    right: 12px !important;
   }
-  .hud-route-deck {
-    top: auto;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    width: calc(100vw - 20px);
-    max-height: 48vh;
+
+  .maplibregl-ctrl-group {
+    background: rgba(15, 23, 42, 0.88) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
   }
-  .hud-bottom-dock {
-    display: none;
+
+  .maplibregl-ctrl-group button {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .hud-custom-instruction-pill {
+    top: 68px;
+    width: calc(100vw - 24px);
+    max-width: 360px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
   }
 }
+

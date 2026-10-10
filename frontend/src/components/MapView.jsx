@@ -68,7 +68,8 @@ function MapView({
   onTogglePitstop,
   isCustomMode = false,
   customPoints = { origin: null, destination: null },
-  onMapClickPoint
+  onMapClickPoint,
+  isMobile = false
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -90,8 +91,10 @@ function MapView({
       container: mapContainerRef.current,
       style: initialStyle,
       center: [centerLon, centerLat],
-      zoom: activeCorridor?.default_zoom || 14.5,
-      pitch: 35,
+      zoom: isMobile 
+        ? (activeCorridor?.default_zoom ? activeCorridor.default_zoom - 0.4 : 14.1)
+        : (activeCorridor?.default_zoom || 14.5),
+      pitch: isMobile ? 25 : 35,
       bearing: -15,
       attributionControl: false,
       transformRequest: (url) => {
@@ -112,7 +115,10 @@ function MapView({
       }
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "bottom-right");
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: true }), 
+      isMobile ? "top-right" : "bottom-right"
+    );
 
     map.on("load", () => {
       mapRef.current = map;
@@ -178,9 +184,12 @@ function MapView({
         const maxLon = Math.max(customPoints.origin[0], customPoints.destination[0]);
         const minLat = Math.min(customPoints.origin[1], customPoints.destination[1]);
         const maxLat = Math.max(customPoints.origin[1], customPoints.destination[1]);
+        const padding = isMobile
+          ? { top: 90, bottom: 180, left: 24, right: 24 }
+          : { top: 140, bottom: 140, left: 460, right: 140 };
         mapRef.current.fitBounds(
           [[minLon, minLat], [maxLon, maxLat]],
-          { padding: { top: 140, bottom: 140, left: 460, right: 140 }, duration: 900 }
+          { padding, duration: 900 }
         );
       }
       return;
@@ -197,13 +206,15 @@ function MapView({
 
       mapRef.current.flyTo({
         center: [centerLon, centerLat],
-        zoom: activeCorridor.default_zoom || 14.5,
-        pitch: 35,
+        zoom: isMobile 
+          ? (activeCorridor.default_zoom ? activeCorridor.default_zoom - 0.4 : 14.1)
+          : (activeCorridor.default_zoom || 14.5),
+        pitch: isMobile ? 25 : 35,
         bearing: -15,
         duration: 1000
       });
     }
-  }, [activeCorridor, isCustomMode, customPoints]);
+  }, [activeCorridor, isCustomMode, customPoints, isMobile]);
 
   // Interactive click handler on Map canvas for Point-to-Point routing
   useEffect(() => {
