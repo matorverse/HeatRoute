@@ -3,31 +3,30 @@ import {
   Flame, 
   Droplets, 
   MapPin, 
-  Info, 
   Cloud, 
   Sparkles, 
-  Thermometer, 
-  ShieldCheck,
-  Sun,
-  CloudRain,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Volume2,
-  Square,
-  AlertOctagon,
+  Sun, 
+  CloudRain, 
+  ChevronDown, 
+  ChevronUp, 
+  Volume2, 
+  Square, 
+  AlertOctagon, 
   AlertTriangle,
-  Navigation
+  Navigation,
+  X
 } from "lucide-react";
 
 import MapView from "./components/MapView";
 import RouteCard from "./components/RouteCard";
 import TimeSlider from "./components/TimeSlider";
 import AwsTelemetryModal from "./components/AwsTelemetryModal";
+import SplashScreen from "./components/SplashScreen";
 import { fetchRouteEvaluation, fetchCorridors } from "./services/api";
 import { FALLBACK_CORRIDORS } from "./data/fallbackData";
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [season, setSeason] = useState("SUMMER"); // "SUMMER" | "MONSOON"
   const [corridors, setCorridors] = useState(FALLBACK_CORRIDORS);
   const [selectedCorridorId, setSelectedCorridorId] = useState("DELHI_CP_TO_MANDI_HOUSE");
@@ -37,7 +36,7 @@ export default function App() {
   const [evaluationData, setEvaluationData] = useState(null);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [showHydration, setShowHydration] = useState(true);
-  const [showStationsList, setShowStationsList] = useState(false);
+  const [isHydrationOpen, setIsHydrationOpen] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isAwsModalOpen, setIsAwsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,58 +146,74 @@ export default function App() {
   const heatIndex = evaluationData?.heat_index_c || 59.8;
 
   return (
-    <div className="app-container">
-      {/* Left Sidebar */}
-      <aside className="sidebar">
-        <header className="sidebar-header">
-          <div className="brand-badge-container">
-            <h1 className="brand-title">
-              <Flame size={26} color="#F97316" />
-              <span>HeatRoute</span>
-            </h1>
-            <span className="track-badge">Track 02 · Heat & Water</span>
-          </div>
-          <p className="tagline">
-            Climate-resilient pedestrian routing layer for extreme summer heatwaves and monsoon flash flooding.
-          </p>
-        </header>
+    <div className="spatial-app-container">
+      {/* 1. Full-Bleed Edge-to-Edge Amazon Location Vector Map */}
+      <main className="map-full-viewport">
+        <MapView
+          routes={activeRoutes}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={handleSelectRoute}
+          hydrationPois={evaluationData?.hydration_pois || []}
+          showHydration={showHydration}
+          solarAltitude={evaluationData?.solar_altitude_deg || 70}
+          solarAzimuth={evaluationData?.solar_azimuth_deg || 280}
+          activeCorridor={activeCorridor}
+          activePitstopPoiId={activePitstopPoiId}
+          onTogglePitstop={handleTogglePitstop}
+        />
+      </main>
 
-        {/* Hazard & Corridor Controls */}
-        <section className="control-section">
-          {/* Dual-Hazard Season Switcher */}
-          <div className="section-label">
-            <span>Climate Hazard Scenario</span>
+      {/* 2. Cinematic First-Load Splash Screen */}
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+
+      {/* 3. Top Floating Glass HUD Navigation Bar */}
+      <header className="hud-topbar">
+        {/* Brand Gem & Live Telemetry Badge */}
+        <div className="hud-brand-group">
+          <div className="brand-logo-gem">
+            <Flame size={20} color="#FF6B2B" />
           </div>
-          <div className="season-toggle-group">
+          <div>
+            <div className="brand-title-wrap">
+              <span className="brand-name">HeatRoute</span>
+              <span className="status-live-dot" title="Live Amazon Location Service Engine">
+                <span className="pulsing-beacon" />
+                <span>{evaluationData?.is_live_cloud ? "AWS LIVE" : "DEMO READY"}</span>
+              </span>
+            </div>
+            <span className="track-subtext">Track 02 · Heat & Water</span>
+          </div>
+        </div>
+
+        {/* Center: Dual-Hazard Scenario Switcher & Corridor Dropdown */}
+        <div className="hud-controls-center">
+          <div className="hud-season-segmented">
             <button
               id="season-summer-btn"
-              className={`season-btn summer ${season === "SUMMER" ? "active" : ""}`}
+              type="button"
+              className={`hud-season-btn ${season === "SUMMER" ? "active-summer" : ""}`}
               onClick={() => setSeason("SUMMER")}
             >
-              <Sun size={15} color={season === "SUMMER" ? "#FBBF24" : "currentColor"} />
+              <Sun size={14} color={season === "SUMMER" ? "#FBBF24" : "currentColor"} />
               <span>☀️ Peak Heatwave (43.5°C)</span>
             </button>
 
             <button
               id="season-monsoon-btn"
-              className={`season-btn monsoon ${season === "MONSOON" ? "active" : ""}`}
+              type="button"
+              className={`hud-season-btn ${season === "MONSOON" ? "active-monsoon" : ""}`}
               onClick={() => setSeason("MONSOON")}
             >
-              <CloudRain size={15} color={season === "MONSOON" ? "#38BDF8" : "currentColor"} />
+              <CloudRain size={14} color={season === "MONSOON" ? "#38BDF8" : "currentColor"} />
               <span>⛈️ Monsoon Flood</span>
             </button>
           </div>
 
-          {/* Microclimate Corridor Switcher */}
-          <div className="section-label" style={{ marginTop: "6px" }}>
-            <MapPin size={13} />
-            <span>Active Corridor Testbed ({corridors.length} Typologies)</span>
-          </div>
-
-          <div className="corridor-select-wrapper">
+          <div className="hud-corridor-select-box">
+            <MapPin size={13} color="var(--color-heat-primary)" />
             <select
               id="corridor-select"
-              className="corridor-select-input"
+              className="hud-corridor-dropdown"
               value={selectedCorridorId}
               onChange={handleCorridorChange}
             >
@@ -208,18 +223,83 @@ export default function App() {
                 </option>
               ))}
             </select>
-            <ChevronDown size={16} className="corridor-select-arrow" />
+            <ChevronDown size={14} className="hud-dropdown-caret" />
           </div>
+        </div>
 
-          <div className="corridor-banner">
-            <div className="corridor-endpoints">
-              <span style={{ color: "#10B981" }}>● Origin: {activeCorridor?.origin?.name || "Origin"}</span>
-              <span>➔</span>
-              <span style={{ color: "#EF4444" }}>● Dest: {activeCorridor?.destination?.name || "Destination"}</span>
+        {/* Right: Environmental Microclimate Telemetry & Actions */}
+        <div className="hud-actions-right">
+          <div className="hud-metrics-strip">
+            <div className="hud-metric-chip">
+              <span className="chip-label">TEMP</span>
+              <span className="chip-val">{evaluationData?.ambient_temp_c || 43.5}°C</span>
+            </div>
+            <div className="hud-metric-chip">
+              <span className="chip-label">HUMIDITY</span>
+              <span className="chip-val">{evaluationData?.relative_humidity || 42}%</span>
+            </div>
+            <div className="hud-metric-chip">
+              <span className="chip-label">{season === "MONSOON" ? "FLOOD RISK" : "HEAT INDEX"}</span>
+              <span className="chip-val heat" style={{ color: season === "MONSOON" ? "#38BDF8" : "var(--color-solar)" }}>
+                {season === "MONSOON" ? "ALERT" : `${heatIndex}°C`}
+              </span>
             </div>
           </div>
 
-          {/* Active Hydration Pitstop Waypoint Banner if Set */}
+          <button
+            id="audio-advisory-btn"
+            type="button"
+            className={`hud-audio-btn ${isPlayingAudio ? "playing" : ""}`}
+            onClick={handleToggleSpeech}
+            title="Hands-free audio safety advisory for street pedestrians"
+          >
+            {isPlayingAudio ? (
+              <>
+                <Square size={12} />
+                <span>Stop</span>
+                <span className="audio-bars-anim">
+                  <span className="bar bar-1" />
+                  <span className="bar bar-2" />
+                  <span className="bar bar-3" />
+                </span>
+              </>
+            ) : (
+              <>
+                <Volume2 size={13} />
+                <span>Listen</span>
+              </>
+            )}
+          </button>
+
+          <button
+            id="open-aws-telemetry"
+            type="button"
+            className="hud-aws-btn"
+            onClick={() => setIsAwsModalOpen(true)}
+          >
+            <Cloud size={13} />
+            <span>AWS Telemetry</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 4. Left Floating Tactical Route Deck */}
+      <aside className="hud-route-deck">
+        <div className="deck-scroll-content">
+          {/* Corridor Endpoints Indicator */}
+          <div className="corridor-endpoints-banner">
+            <div className="endpoint-tag">
+              <span className="endpoint-dot origin" />
+              <span>{activeCorridor?.origin?.name || "Origin"}</span>
+            </div>
+            <span className="corridor-arrow">➔</span>
+            <div className="endpoint-tag">
+              <span className="endpoint-dot dest" />
+              <span>{activeCorridor?.destination?.name || "Destination"}</span>
+            </div>
+          </div>
+
+          {/* Active Hydration Waypoint Banner */}
           {activePitstopPoi && (
             <div className="pitstop-active-banner">
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -236,39 +316,12 @@ export default function App() {
             </div>
           )}
 
-          {/* Atmospheric Environmental Metrics */}
-          <div className="metrics-strip">
-            <div className="metric-pill">
-              <span className="metric-pill-label">Ambient Temp</span>
-              <span className="metric-pill-value">
-                {evaluationData?.ambient_temp_c || 43.5}°C
-              </span>
-            </div>
-            <div className="metric-pill">
-              <span className="metric-pill-label">Humidity</span>
-              <span className="metric-pill-value">
-                {evaluationData?.relative_humidity || 42}%
-              </span>
-            </div>
-            <div className="metric-pill">
-              <span className="metric-pill-label">
-                {season === "MONSOON" ? "Inundation Index" : "Heat Index"}
-              </span>
-              <span 
-                className="metric-pill-value" 
-                style={{ color: season === "MONSOON" ? "#38BDF8" : "var(--color-accent)" }}
-              >
-                {season === "MONSOON" ? "ALERT" : `${heatIndex}°C`}
-              </span>
-            </div>
-          </div>
-
-          {/* Real-time Health Advisory Banner (IMD / Medical Standard) */}
+          {/* Health Advisory Banner (IMD / Medical Standard) */}
           {season === "SUMMER" && heatIndex >= 54.0 && (
             <div className="health-advisory-banner danger">
               <AlertOctagon size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <strong style={{ color: "#FCA5A5" }}>IMD Red Alert (Extreme Heat Hazard):</strong> Heat stroke risk imminent with prolonged exposure. Recommended hydration: 500ml every 30m. Rest in covered shade every 1 km.
+                <strong style={{ color: "#FCA5A5" }}>IMD Red Alert (Extreme Heat Hazard):</strong> Heat stroke risk imminent. Hydration quota: 500ml every 30m. Rest in covered shade every 1 km.
               </div>
             </div>
           )}
@@ -277,7 +330,7 @@ export default function App() {
             <div className="health-advisory-banner warning">
               <AlertTriangle size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <strong style={{ color: "#FDE68A" }}>High Heat Caution:</strong> Heat cramps likely. Maintain fluid intake (350ml every 30m). Favor tree canopy routes.
+                <strong style={{ color: "#FDE68A" }}>High Heat Caution:</strong> Heat cramps likely. Drink 350ml water every 30m. Favor heritage tree canopies.
               </div>
             </div>
           )}
@@ -291,97 +344,54 @@ export default function App() {
             </div>
           )}
 
-          {/* Interactive Time-Travel Slider */}
-          <TimeSlider
-            currentHour={currentHour}
-            onHourChange={handleHourChange}
-          />
-        </section>
-
-        {/* Explainable Decision Summary with Hands-Free Audio Advisory */}
-        {evaluationData?.decision_summary && (
-          <div className="decision-card">
-            <Sparkles size={20} className="decision-icon" />
-            <div className="decision-text" style={{ flex: 1 }}>
-              {evaluationData.decision_summary}
+          {/* Explainable Decision Summary */}
+          {evaluationData?.decision_summary && (
+            <div className="decision-card">
+              <Sparkles size={18} className="decision-icon" />
+              <div className="decision-text">
+                {evaluationData.decision_summary}
+              </div>
             </div>
-            <button
-              id="audio-advisory-btn"
-              className={`audio-advisory-btn ${isPlayingAudio ? "playing" : ""}`}
-              onClick={handleToggleSpeech}
-              title="Hands-free audio safety advisory for street pedestrians"
-            >
-              {isPlayingAudio ? <Square size={11} /> : <Volume2 size={13} />}
-              <span>{isPlayingAudio ? "Stop" : "Listen"}</span>
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Candidate Routes List */}
-        <div className="routes-list">
-          <div className="section-label" style={{ marginBottom: "2px" }}>
-            <ShieldCheck size={13} />
-            <span>Evaluated Candidate Routes ({activeRoutes.length})</span>
+          {/* Candidate Routes List */}
+          <div className="deck-section-label">
+            <span>Evaluated Candidate Paths ({activeRoutes.length})</span>
           </div>
 
-          {activeRoutes.map(route => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              isSelected={route.id === selectedRouteId}
-              onSelect={handleSelectRoute}
-              activeSeason={season}
-              corridorName={activeCorridor?.name}
-              onAddPitstop={handleTogglePitstop}
-            />
-          ))}
+          <div className="routes-deck-list">
+            {activeRoutes.map(route => (
+              <RouteCard
+                key={route.id}
+                route={route}
+                isSelected={route.id === selectedRouteId}
+                onSelect={handleSelectRoute}
+                activeSeason={season}
+                corridorName={activeCorridor?.name}
+                onAddPitstop={handleTogglePitstop}
+              />
+            ))}
+          </div>
         </div>
+      </aside>
 
-        {/* POI & AWS Quick Action Bar */}
-        <div className="layer-controls">
-          <button
-            id="toggle-hydration-layer"
-            className={`poi-toggle-btn ${showHydration ? "active" : ""}`}
-            onClick={() => setShowHydration(!showHydration)}
-          >
-            <Droplets size={15} />
-            <span>{showHydration ? "Map Pins (Active)" : "Show Pins"}</span>
-          </button>
+      {/* 5. Right Floating Hydration HUD (Minimizable Flyout) */}
+      <div className="hud-hydration-dock">
+        <button
+          type="button"
+          className="hud-hydration-header-toggle"
+          onClick={() => setIsHydrationOpen(!isHydrationOpen)}
+          title="Toggle verified drinking water & recovery points"
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <Droplets size={14} color="#38BDF8" />
+            <span>Water & Rest Stops ({evaluationData?.hydration_pois?.length || 0})</span>
+          </div>
+          {isHydrationOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
 
-          <button
-            id="toggle-stations-list"
-            className={`poi-toggle-btn ${showStationsList ? "active" : ""}`}
-            onClick={() => setShowStationsList(!showStationsList)}
-          >
-            <Navigation size={14} />
-            <span>{showStationsList ? "Hide Stations" : `Stations (${evaluationData?.hydration_pois?.length || 0})`}</span>
-          </button>
-
-          <button
-            id="open-aws-telemetry"
-            className="aws-pill-btn"
-            onClick={() => setIsAwsModalOpen(true)}
-          >
-            <Cloud size={15} />
-            <span>AWS Telemetry</span>
-          </button>
-        </div>
-
-        {/* Collapsible Verified Hydration & Recovery Stations Drawer */}
-        {showStationsList && evaluationData?.hydration_pois && (
-          <div className="hydration-stations-drawer">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "var(--color-hydration)", textTransform: "uppercase" }}>
-                🚰 Verified Drinking Water & Recovery Points
-              </span>
-              <button 
-                onClick={() => setShowStationsList(false)}
-                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-
+        {isHydrationOpen && evaluationData?.hydration_pois && (
+          <div className="hud-hydration-list">
             {evaluationData.hydration_pois.map(poi => {
               const isAdded = activePitstopPoiId === poi.id;
               return (
@@ -400,10 +410,11 @@ export default function App() {
                   <div className="station-card-bottom">
                     <span className="station-accessibility">● {poi.accessibility || "Open to public"}</span>
                     <button
+                      type="button"
                       className={`station-waypoint-btn ${isAdded ? "active" : ""}`}
                       onClick={() => handleTogglePitstop(poi.id)}
                     >
-                      {isAdded ? "✓ Waypoint Added" : "+ Add Waypoint (+1.5m)"}
+                      {isAdded ? "✓ Waypoint Added" : "+ Add Waypoint"}
                     </button>
                   </div>
                 </div>
@@ -411,25 +422,19 @@ export default function App() {
             })}
           </div>
         )}
-      </aside>
+      </div>
 
-      {/* Main Map View */}
-      <main className="map-view-wrapper">
-        <MapView
-          routes={activeRoutes}
-          selectedRouteId={selectedRouteId}
-          onSelectRoute={handleSelectRoute}
-          hydrationPois={evaluationData?.hydration_pois || []}
-          showHydration={showHydration}
-          solarAltitude={evaluationData?.solar_altitude_deg || 70}
-          solarAzimuth={evaluationData?.solar_azimuth_deg || 280}
-          activeCorridor={activeCorridor}
-          activePitstopPoiId={activePitstopPoiId}
-          onTogglePitstop={handleTogglePitstop}
+      {/* 6. Bottom Floating Diurnal Time-Travel Scrubber Dock */}
+      <footer className="hud-bottom-dock">
+        <TimeSlider
+          currentHour={currentHour}
+          onHourChange={handleHourChange}
+          solarAltitude={evaluationData?.solar_altitude_deg}
+          solarAzimuth={evaluationData?.solar_azimuth_deg}
         />
-      </main>
+      </footer>
 
-      {/* AWS Telemetry Modal */}
+      {/* 7. AWS Telemetry & Cloud Metrics Modal */}
       <AwsTelemetryModal
         isOpen={isAwsModalOpen}
         onClose={() => setIsAwsModalOpen(false)}
