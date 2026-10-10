@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Flame, 
   Droplets, 
@@ -24,7 +24,7 @@ export default function App() {
   const [isAwsModalOpen, setIsAwsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Recalculate routes when departure time changes
+  // Recalculate routes with smooth 100ms debounce during slider interaction
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -35,23 +35,41 @@ export default function App() {
     const minStr = mins < 10 ? `0${mins}` : `${mins}`;
     const isoString = `2026-06-15T${hourStr}:${minStr}:00+05:30`;
 
-    fetchRouteEvaluation({
-      departureTime: isoString,
-      ambientTempC: currentHour >= 16 ? 40.0 : 43.5,
-      humidityPct: currentHour >= 16 ? 45.0 : 42.0,
-      modePreference: "BALANCED"
-    }).then(data => {
-      if (isMounted) {
-        setEvaluationData(data);
-        setIsLoading(false);
-        // Default select recommended route or balanced
-        const rec = data.routes?.find(r => r.is_recommended) || data.routes?.[0];
-        if (rec) setSelectedRouteId(rec.id);
-      }
-    });
+    const timer = setTimeout(() => {
+      fetchRouteEvaluation({
+        departureTime: isoString,
+        ambientTempC: currentHour >= 16 ? 40.0 : 43.5,
+        humidityPct: currentHour >= 16 ? 45.0 : 42.0,
+        modePreference: "BALANCED"
+      }).then(data => {
+        if (isMounted) {
+          setEvaluationData(data);
+          setIsLoading(false);
+          // Preserve currently selected route if valid, otherwise fallback to recommended
+          setSelectedRouteId(prev => {
+            if (prev && data.routes?.some(r => r.id === prev)) {
+              return prev;
+            }
+            const rec = data.routes?.find(r => r.is_recommended) || data.routes?.[0];
+            return rec ? rec.id : prev;
+          });
+        }
+      });
+    }, 100);
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [currentHour]);
+
+  const handleSelectRoute = useCallback((id) => {
+    setSelectedRouteId(id);
+  }, []);
+
+  const handleHourChange = useCallback((val) => {
+    setCurrentHour(val);
+  }, []);
 
   const activeRoutes = evaluationData?.routes || [];
   const selectedRoute = activeRoutes.find(r => r.id === selectedRouteId) || activeRoutes[0];
@@ -116,7 +134,7 @@ export default function App() {
           {/* Interactive Time-Travel Slider */}
           <TimeSlider
             currentHour={currentHour}
-            onHourChange={(val) => setCurrentHour(val)}
+            onHourChange={handleHourChange}
           />
         </section>
 
@@ -142,7 +160,7 @@ export default function App() {
               key={route.id}
               route={route}
               isSelected={route.id === selectedRouteId}
-              onSelect={(id) => setSelectedRouteId(id)}
+              onSelect={handleSelectRoute}
             />
           ))}
         </div>
@@ -174,7 +192,7 @@ export default function App() {
         <MapView
           routes={activeRoutes}
           selectedRouteId={selectedRouteId}
-          onSelectRoute={(id) => setSelectedRouteId(id)}
+          onSelectRoute={handleSelectRoute}
           hydrationPois={evaluationData?.hydration_pois || []}
           showHydration={showHydration}
           solarAltitude={evaluationData?.solar_altitude_deg || 70}

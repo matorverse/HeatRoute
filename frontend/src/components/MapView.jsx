@@ -47,7 +47,7 @@ const AWS_STYLE_URL = hasAwsLocationConfig
       : `https://maps.geo.${AWS_REGION}.amazonaws.com/v2/styles/${AWS_STYLE_NAME}/descriptor?key=${AWS_API_KEY}&color-scheme=Dark`)
   : null;
 
-export default function MapView({
+function MapView({
   routes = [],
   selectedRouteId,
   onSelectRoute,
@@ -148,15 +148,6 @@ export default function MapView({
   }, [hydrationPois, showHydration]);
 
   function updateRouteLayers(map, routeList, activeId) {
-    // Clean up existing route layers
-    const existingLayers = ["route-layer-inactive", "route-layer-active", "route-layer-glow"];
-    existingLayers.forEach(id => {
-      if (map.getLayer(id)) map.removeLayer(id);
-    });
-    if (map.getSource("routes-source")) {
-      map.removeSource("routes-source");
-    }
-
     if (!routeList || routeList.length === 0) return;
 
     // Build GeoJSON FeatureCollection
@@ -178,62 +169,84 @@ export default function MapView({
         }
       }));
 
-    map.addSource("routes-source", {
-      type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features
-      }
-    });
+    const geojsonData = {
+      type: "FeatureCollection",
+      features
+    };
 
-    // Inactive / background routes
-    map.addLayer({
-      id: "route-layer-inactive",
-      type: "line",
-      source: "routes-source",
-      filter: ["!=", ["get", "id"], activeId || ""],
-      paint: {
-        "line-color": ["get", "color"],
-        "line-width": 4,
-        "line-opacity": 0.35,
-        "line-dasharray": [2, 1]
-      }
-    });
+    const source = map.getSource("routes-source");
 
-    // Selected Route Glow Layer
-    map.addLayer({
-      id: "route-layer-glow",
-      type: "line",
-      source: "routes-source",
-      filter: ["==", ["get", "id"], activeId || ""],
-      paint: {
-        "line-color": ["get", "color"],
-        "line-width": 14,
-        "line-opacity": 0.25,
-        "line-blur": 6
-      }
-    });
+    if (source) {
+      // High-performance path: Update source data without tearing down WebGL layers
+      source.setData(geojsonData);
 
-    // Selected Route Core Layer
-    map.addLayer({
-      id: "route-layer-active",
-      type: "line",
-      source: "routes-source",
-      filter: ["==", ["get", "id"], activeId || ""],
-      paint: {
-        "line-color": ["get", "color"],
-        "line-width": 6,
-        "line-opacity": 0.95
-      }
-    });
+      // Instant O(1) GPU layer filter updates
+      map.setFilter("route-layer-inactive", ["!=", ["get", "id"], activeId || ""]);
+      map.setFilter("route-layer-glow", ["==", ["get", "id"], activeId || ""]);
+      map.setFilter("route-layer-active", ["==", ["get", "id"], activeId || ""]);
+    } else {
+      // First-time initialization: Add GeoJSON source and layers
+      map.addSource("routes-source", {
+        type: "geojson",
+        data: geojsonData
+      });
 
-    // Click handler on routes
-    map.on("click", "route-layer-inactive", (e) => {
-      if (e.features && e.features[0]) {
-        const clickedId = e.features[0].properties.id;
-        if (onSelectRoute) onSelectRoute(clickedId);
-      }
-    });
+      // Inactive / background routes
+      map.addLayer({
+        id: "route-layer-inactive",
+        type: "line",
+        source: "routes-source",
+        filter: ["!=", ["get", "id"], activeId || ""],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": 4,
+          "line-opacity": 0.4,
+          "line-dasharray": [2, 1]
+        }
+      });
+
+      // Selected Route Glow Layer
+      map.addLayer({
+        id: "route-layer-glow",
+        type: "line",
+        source: "routes-source",
+        filter: ["==", ["get", "id"], activeId || ""],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": 14,
+          "line-opacity": 0.28,
+          "line-blur": 6
+        }
+      });
+
+      // Selected Route Core Layer
+      map.addLayer({
+        id: "route-layer-active",
+        type: "line",
+        source: "routes-source",
+        filter: ["==", ["get", "id"], activeId || ""],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": 6,
+          "line-opacity": 0.98
+        }
+      });
+
+      // Register click handler on routes once
+      map.on("click", "route-layer-inactive", (e) => {
+        if (e.features && e.features[0]) {
+          const clickedId = e.features[0].properties.id;
+          if (onSelectRoute) onSelectRoute(clickedId);
+        }
+      });
+
+      map.on("mouseenter", "route-layer-inactive", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "route-layer-inactive", () => {
+        map.getCanvas().style.cursor = "";
+      });
+    }
 
     // Ensure Start and End markers are in place
     renderOriginDestinationMarkers(map);
@@ -246,7 +259,7 @@ export default function MapView({
         zoom: 14.6,
         pitch: 35,
         bearing: -15,
-        duration: 1000
+        duration: 900
       });
     }
   }
@@ -280,17 +293,23 @@ export default function MapView({
   }
 
   function updatePoiMarkers(map, pois, isVisible) {
-    // Clear existing markers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
+    // If markers already created, efficiently toggle DOM display rather than recreating
+    if (markersRef.current.length > 0) {
+      markersRef.current.forEach(m => {
+        const el = m.getElement();
+        if (el) el.style.display = isVisible ? "flex" : "none";
+      });
+      return;
+    }
 
-    if (!isVisible || !pois) return;
+    if (!pois || pois.length === 0) return;
 
     pois.forEach(poi => {
       const el = document.createElement("div");
       el.className = "marker-water";
       el.innerHTML = "💧";
       el.title = poi.name;
+      el.style.display = isVisible ? "flex" : "none";
 
       const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(`
         <div style="font-family: sans-serif; font-size: 12px; color: #111827; padding: 4px;">
@@ -340,3 +359,5 @@ export default function MapView({
     </div>
   );
 }
+
+export default React.memo(MapView);

@@ -3,7 +3,7 @@ HeatRoute Backend Service
 FastAPI REST application + AWS Lambda Mangum entry point.
 """
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 from datetime import datetime, timezone
@@ -29,7 +29,8 @@ app.add_middleware(
 
 
 @app.get("/")
-def root():
+def root(response: Response):
+    response.headers["Cache-Control"] = "public, max-age=3600"
     return {
         "service": "HeatRoute Engine API",
         "status": "OPERATIONAL",
@@ -41,8 +42,9 @@ def root():
 
 
 @app.get("/api/v1/corridors")
-def get_corridors():
-    """Returns available microclimate testbed corridors."""
+def get_corridors(response: Response):
+    """Returns available microclimate testbed corridors with 10-minute caching."""
+    response.headers["Cache-Control"] = "public, max-age=600"
     corridor = load_corridor_data()
     return {
         "corridors": [
@@ -77,8 +79,9 @@ def evaluate_routes(request: RouteRequest):
 
 
 @app.get("/api/v1/hydration-pois")
-def get_hydration_pois():
-    """Returns verified hydration kiosks, water ATMs, and cooling spots."""
+def get_hydration_pois(response: Response):
+    """Returns verified hydration kiosks, water ATMs, and cooling spots with 10-minute caching."""
+    response.headers["Cache-Control"] = "public, max-age=600"
     pois = load_hydration_pois()
     return {
         "count": len(pois),

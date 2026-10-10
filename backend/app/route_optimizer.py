@@ -25,14 +25,18 @@ from .thermal_engine import (
 )
 from .safety_filter import filter_candidate_route_safety
 
-# Load local datasets
+from functools import lru_cache
+
+# Load local datasets with in-memory caching to eliminate disk I/O on Lambda / server
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
+@lru_cache(maxsize=1)
 def load_corridor_data() -> Dict[str, Any]:
     path = os.path.join(DATA_DIR, "delhi_corridors.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+@lru_cache(maxsize=1)
 def load_hydration_pois() -> List[Dict[str, Any]]:
     path = os.path.join(DATA_DIR, "hydration_pois.json")
     with open(path, "r", encoding="utf-8") as f:

@@ -1,7 +1,7 @@
 import React from "react";
 import { Sun } from "lucide-react";
 
-export default function TimeSlider({ currentHour, onHourChange }) {
+function TimeSlider({ currentHour, onHourChange }) {
   // Convert fractional hour (e.g. 13.5) to formatted time string (e.g. "01:30 PM")
   function formatHour(val) {
     const hours24 = Math.floor(val);
@@ -44,3 +44,5 @@ export default function TimeSlider({ currentHour, onHourChange }) {
     </div>
   );
 }
+
+export default React.memo(TimeSlider);

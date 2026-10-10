@@ -5,6 +5,7 @@ segment thermal exposure (STE), and aggregated Relative Thermal Exposure (RTE).
 """
 
 import math
+from functools import lru_cache
 from typing import Dict, Any, List
 
 # Surface thermal emission & absorption multipliers (relative to neutral shaded surface = 1.0)
@@ -17,6 +18,7 @@ SURFACE_MODIFIERS = {
 }
 
 
+@lru_cache(maxsize=512)
 def calculate_heat_index(temp_c: float, humidity_pct: float) -> float:
     """
     Computes Steadman/Rothfusz Heat Index in Celsius.

@@ -8,6 +8,10 @@ import { FALLBACK_EVALUATION, FALLBACK_HYDRATION_POIS } from "../data/fallbackDa
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
+// Fast in-memory cache for repeated time/weather parameters
+const evaluationCache = new Map();
+const MAX_CACHE_SIZE = 50;
+
 export async function fetchRouteEvaluation(params = {}) {
   const {
     departureTime = "2026-06-15T13:30:00+05:30",
@@ -17,9 +21,16 @@ export async function fetchRouteEvaluation(params = {}) {
     maxDetourPercent = 25.0
   } = params;
 
+  const cacheKey = `${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}_${maxDetourPercent}`;
+  if (evaluationCache.has(cacheKey)) {
+    return evaluationCache.get(cacheKey);
+  }
+
+  let result = null;
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s quick timeout
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2.0s fast timeout
 
     const res = await fetch(`${BACKEND_URL}/api/v1/routes/evaluate`, {
       method: "POST",
@@ -40,18 +51,29 @@ export async function fetchRouteEvaluation(params = {}) {
 
     if (res.ok) {
       const data = await res.json();
-      return { ...data, is_live_cloud: true };
+      result = { ...data, is_live_cloud: true };
     }
   } catch (err) {
-    console.info("Notice: Live backend unreachable, activating deterministic in-browser engine:", err.message);
+    // Silent fallback to client-side engine without noisy console spew
   }
 
-  // Resilient deterministic client-side calculation for departure time shifts
-  return simulateTimeShiftEvaluation(departureTime, ambientTempC, humidityPct, modePreference);
+  if (!result) {
+    // Resilient deterministic client-side calculation for departure time shifts
+    result = simulateTimeShiftEvaluation(departureTime, ambientTempC, humidityPct, modePreference);
+  }
+
+  // Cache result
+  if (evaluationCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = evaluationCache.keys().next().value;
+    evaluationCache.delete(oldestKey);
+  }
+  evaluationCache.set(cacheKey, result);
+
+  return result;
 }
 
 /**
- * Calculates in-browser dynamic solar & exposure shifts when offline
+ * Calculates in-browser dynamic solar & exposure shifts with zero-copy route mapping
  */
 function simulateTimeShiftEvaluation(timeIso, tempC, humidityPct, modePref) {
   const date = new Date(timeIso);
@@ -67,14 +89,17 @@ function simulateTimeShiftEvaluation(timeIso, tempC, humidityPct, modePref) {
   const isLateAfternoon = hour >= 16.0;
   const isMorning = hour <= 10.0;
 
-  // Clone fallback routes
-  const cloned = JSON.parse(JSON.stringify(FALLBACK_EVALUATION));
-  cloned.is_live_cloud = false;
-  cloned.is_fallback_mode = true;
-  cloned.departure_time = timeIso;
-  cloned.solar_altitude_deg = Math.round(solarAlt * 10) / 10;
-  cloned.ambient_temp_c = tempC;
-  cloned.relative_humidity = humidityPct;
+  // Optimized shallow clone reusing immutable coordinate geometries
+  const cloned = {
+    ...FALLBACK_EVALUATION,
+    is_live_cloud: false,
+    is_fallback_mode: true,
+    departure_time: timeIso,
+    solar_altitude_deg: Math.round(solarAlt * 10) / 10,
+    ambient_temp_c: tempC,
+    relative_humidity: humidityPct,
+    routes: FALLBACK_EVALUATION.routes.map(r => ({ ...r }))
+  };
 
   // Modify route exposures based on time-dependent shade
   cloned.routes.forEach(route => {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Clock, Shield, AlertTriangle, Trees, Compass } from "lucide-react";
 
-export default function RouteCard({ route, isSelected, onSelect }) {
+function RouteCard({ route, isSelected, onSelect }) {
   const isRejected = route.mode === "REJECTED_UNSAFE";
 
   const modeBadgeClass = {
@@ -11,12 +11,23 @@ export default function RouteCard({ route, isSelected, onSelect }) {
     REJECTED_UNSAFE: "mode-rejected"
   }[route.mode] || "mode-balanced";
 
+  const handleKeyDown = (e) => {
+    if (!isRejected && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      onSelect(route.id);
+    }
+  };
+
   return (
     <div
       id={`route-card-${route.id}`}
       className={`route-card ${isSelected ? "selected" : ""} ${isRejected ? "rejected" : ""}`}
       style={{ "--route-color": route.exposure_color }}
       onClick={() => !isRejected && onSelect(route.id)}
+      onKeyDown={handleKeyDown}
+      tabIndex={isRejected ? -1 : 0}
+      role={isRejected ? "region" : "button"}
+      aria-pressed={isSelected}
     >
       <div className="route-card-header">
         <span className={`route-mode-pill ${modeBadgeClass}`}>
@@ -97,3 +108,5 @@ export default function RouteCard({ route, isSelected, onSelect }) {
     </div>
   );
 }
+
+export default React.memo(RouteCard);
