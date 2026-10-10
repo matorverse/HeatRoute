@@ -11,7 +11,7 @@ import {
   FALLBACK_ROUTES_BY_CORRIDOR 
 } from "../data/fallbackData";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? (import.meta.env.PROD ? "" : "http://127.0.0.1:8000");
 
 // Fast in-memory cache for repeated time/weather/corridor parameters
 const evaluationCache = new Map();

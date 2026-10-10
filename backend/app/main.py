@@ -42,6 +42,7 @@ def root(response: Response):
 
 
 @app.get("/api/v1/corridors")
+@app.get("/v1/corridors")
 def get_corridors(response: Response):
     """Returns available microclimate testbed corridors with 10-minute caching."""
     response.headers["Cache-Control"] = "public, max-age=600"
@@ -70,6 +71,7 @@ def get_corridors(response: Response):
 
 
 @app.post("/api/v1/routes/evaluate", response_model=RouteResponse)
+@app.post("/v1/routes/evaluate", response_model=RouteResponse)
 def evaluate_routes(request: RouteRequest):
     """
     Evaluates pedestrian routes through safety filters, solar geometry,
@@ -92,6 +94,7 @@ def evaluate_routes(request: RouteRequest):
 
 
 @app.get("/api/v1/hydration-pois")
+@app.get("/v1/hydration-pois")
 def get_hydration_pois(response: Response):
     """Returns verified hydration kiosks, water ATMs, and cooling spots with 10-minute caching."""
     response.headers["Cache-Control"] = "public, max-age=600"
@@ -103,6 +106,7 @@ def get_hydration_pois(response: Response):
 
 
 @app.get("/api/v1/solar-position")
+@app.get("/v1/solar-position")
 def get_solar_position(
     lat: float = Query(28.6328, description="Latitude"),
     lon: float = Query(77.2195, description="Longitude"),
