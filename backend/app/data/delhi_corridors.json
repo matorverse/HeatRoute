@@ -15,9 +15,11 @@
       "id": "route-direct-barakhamba",
       "name": "Barakhamba Road Direct",
       "mode_candidate": "FASTEST",
-      "description": "Shortest path along Outer Circle and Barakhamba arterial road. Minimal street trees, wide asphalt surface, high solar exposure during midday.",
+      "description": "Shortest arterial path along Outer Circle and Barakhamba Road. Minimal street trees, wide asphalt blacktop, high solar insolation during midday.",
       "total_length_m": 1540,
       "estimated_baseline_min": 15.5,
+      "waterlogging_risk": "MODERATE_PUDDLES",
+      "is_covered": false,
       "path_coordinates": [
         [77.2195, 28.6328],
         [77.2215, 28.6320],
@@ -25,6 +27,36 @@
         [77.2285, 28.6288],
         [77.2318, 28.6272],
         [77.2345, 28.6258]
+      ],
+      "steps": [
+        {
+          "step_num": 1,
+          "instruction": "Exit Rajiv Chowk Gate 2 and head east across Outer Circle",
+          "distance_m": 220,
+          "shade_info": "Low shade (10%), open asphalt crossing",
+          "water_nearby": "Rajiv Chowk Metro Water ATM at origin"
+        },
+        {
+          "step_num": 2,
+          "instruction": "Continue straight along Barakhamba Road northern commercial strip",
+          "distance_m": 410,
+          "shade_info": "15% tree cover, intermittent tower shadow",
+          "water_nearby": "Barakhamba Metro Hydration Facility (100m south)"
+        },
+        {
+          "step_num": 3,
+          "instruction": "Walk past high-rise office towers towards Copernicus Marg crossing",
+          "distance_m": 460,
+          "shade_info": "12% canopy cover, asphalt radiates intense heat",
+          "water_nearby": null
+        },
+        {
+          "step_num": 4,
+          "instruction": "Approach Mandi House roundabout via eastern pedestrian sidewalk",
+          "distance_m": 450,
+          "shade_info": "20% building shade near roundabout",
+          "water_nearby": "Mandi House Gate 2 Metro Water Facility at destination"
+        }
       ],
       "segments": [
         {
@@ -37,6 +69,8 @@
           "building_height_m": 12.0,
           "street_width_m": 35.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "MODERATE_PUDDLES",
           "has_sidewalk": true,
           "highway_type": "primary",
           "speed_limit_kmh": 40
@@ -51,6 +85,8 @@
           "building_height_m": 45.0,
           "street_width_m": 38.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "primary",
           "speed_limit_kmh": 40
@@ -65,6 +101,8 @@
           "building_height_m": 50.0,
           "street_width_m": 36.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "primary",
           "speed_limit_kmh": 40
@@ -79,6 +117,8 @@
           "building_height_m": 25.0,
           "street_width_m": 32.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "MODERATE_PUDDLES",
           "has_sidewalk": true,
           "highway_type": "primary",
           "speed_limit_kmh": 40
@@ -92,6 +132,8 @@
       "description": "Follows KG Marg lined with mature heritage Neem and Peepal tree canopies, connecting via Tolstoy Marg to Mandi House.",
       "total_length_m": 1780,
       "estimated_baseline_min": 17.8,
+      "waterlogging_risk": "LOW",
+      "is_covered": false,
       "path_coordinates": [
         [77.2195, 28.6328],
         [77.2210, 28.6315],
@@ -99,6 +141,36 @@
         [77.2260, 28.6250],
         [77.2305, 28.6254],
         [77.2345, 28.6258]
+      ],
+      "steps": [
+        {
+          "step_num": 1,
+          "instruction": "Walk south from Rajiv Chowk into KG Marg radial link",
+          "distance_m": 210,
+          "shade_info": "35% shade from ornamental roadside trees",
+          "water_nearby": "Central Park Shaded Pavilion (150m west)"
+        },
+        {
+          "step_num": 2,
+          "instruction": "Follow wide pedestrian sidewalk under mature heritage Neem canopy",
+          "distance_m": 480,
+          "shade_info": "75% deep tree canopy cover",
+          "water_nearby": "DJB Public Water Post at KG Marg"
+        },
+        {
+          "step_num": 3,
+          "instruction": "Continue past British Council along shaded heritage boulevard",
+          "distance_m": 420,
+          "shade_info": "80% continuous overhead leaf cover",
+          "water_nearby": null
+        },
+        {
+          "step_num": 4,
+          "instruction": "Turn left onto Tolstoy Marg tree-lined walkway leading to Mandi House",
+          "distance_m": 670,
+          "shade_info": "65% canopy cover, comfortable ambient microclimate",
+          "water_nearby": "Tolstoy Marg Community Water Cooler (Pyaau)"
+        }
       ],
       "segments": [
         {
@@ -111,6 +183,8 @@
           "building_height_m": 15.0,
           "street_width_m": 25.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "secondary",
           "speed_limit_kmh": 35
@@ -125,6 +199,8 @@
           "building_height_m": 18.0,
           "street_width_m": 28.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "secondary",
           "speed_limit_kmh": 35
@@ -139,6 +215,8 @@
           "building_height_m": 16.0,
           "street_width_m": 26.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "secondary",
           "speed_limit_kmh": 35
@@ -153,6 +231,8 @@
           "building_height_m": 22.0,
           "street_width_m": 24.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
           "has_sidewalk": true,
           "highway_type": "secondary",
           "speed_limit_kmh": 30
@@ -163,9 +243,11 @@
       "id": "route-colonnade-coolest",
       "name": "CP Colonnade Arcade & Shaded Lane",
       "mode_candidate": "COOLEST",
-      "description": "Utilizes 100% covered pedestrian colonnade arcades in Connaught Place, transitioning through tree-shaded School Lane and Babar Road.",
+      "description": "Utilizes 100% covered pedestrian colonnade arcades in Connaught Place, transitioning through tree-shaded School Lane and Babar Road. Completely rain and sun protected.",
       "total_length_m": 1920,
       "estimated_baseline_min": 19.4,
+      "waterlogging_risk": "NONE",
+      "is_covered": true,
       "path_coordinates": [
         [77.2195, 28.6328],
         [77.2180, 28.6315],
@@ -174,6 +256,43 @@
         [77.2270, 28.6265],
         [77.2310, 28.6260],
         [77.2345, 28.6258]
+      ],
+      "steps": [
+        {
+          "step_num": 1,
+          "instruction": "Enter Inner Circle covered colonnade corridor at Block B",
+          "distance_m": 350,
+          "shade_info": "100% full structural colonnade roof, zero direct solar radiation & fully rain protected",
+          "water_nearby": "Rajiv Chowk Metro Water ATM"
+        },
+        {
+          "step_num": 2,
+          "instruction": "Navigate through covered Janpath arcade shopping verandas",
+          "distance_m": 310,
+          "shade_info": "100% covered architectural walkway, paver surface",
+          "water_nearby": "Janpath Tourist Information Water Kiosk"
+        },
+        {
+          "step_num": 3,
+          "instruction": "Turn into Atul Grove shaded pedestrian lane with dense canopy",
+          "distance_m": 380,
+          "shade_info": "85% dense tree canopy, tranquil residential street",
+          "water_nearby": null
+        },
+        {
+          "step_num": 4,
+          "instruction": "Walk through School Lane green corridor",
+          "distance_m": 480,
+          "shade_info": "80% tree shade, low traffic surface",
+          "water_nearby": "Tolstoy Marg Community Cooler nearby"
+        },
+        {
+          "step_num": 5,
+          "instruction": "Reach Mandi House via Babar Road shaded approach",
+          "distance_m": 400,
+          "shade_info": "70% shade from residential gardens and neem trees",
+          "water_nearby": "Mandi House Gate 2 Metro Hydration Point"
+        }
       ],
       "segments": [
         {
@@ -186,6 +305,8 @@
           "building_height_m": 14.0,
           "street_width_m": 12.0,
           "is_colonnade": true,
+          "is_covered": true,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": true,
           "highway_type": "pedestrian",
           "speed_limit_kmh": 0
@@ -197,9 +318,11 @@
           "end_coords": [77.2198, 28.6290],
           "surface_type": "paver_colonnade",
           "canopy_coverage": 0.20,
-          "building_height_m": 12.0,
+          "building_height_m": 14.0,
           "street_width_m": 14.0,
           "is_colonnade": true,
+          "is_covered": true,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": true,
           "highway_type": "pedestrian",
           "speed_limit_kmh": 0
@@ -214,6 +337,8 @@
           "building_height_m": 10.0,
           "street_width_m": 10.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": true,
           "highway_type": "living_street",
           "speed_limit_kmh": 20
@@ -228,6 +353,8 @@
           "building_height_m": 12.0,
           "street_width_m": 12.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": true,
           "highway_type": "residential",
           "speed_limit_kmh": 25
@@ -242,9 +369,101 @@
           "building_height_m": 14.0,
           "street_width_m": 16.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": true,
           "highway_type": "residential",
           "speed_limit_kmh": 25
+        }
+      ]
+    },
+    {
+      "id": "route-minto-underpass",
+      "name": "Minto Road Sunken Railway Underpass",
+      "mode_candidate": "FASTEST",
+      "description": "Sunken railway subway cutting directly towards Mandi House. Fast shortcut in dry weather, but notoriously submerges up to 1.8m during monsoon downpours.",
+      "total_length_m": 1280,
+      "estimated_baseline_min": 12.8,
+      "waterlogging_risk": "SEVERE_SUBMERGED",
+      "is_covered": false,
+      "path_coordinates": [
+        [77.2195, 28.6328],
+        [77.2220, 28.6345],
+        [77.2265, 28.6330],
+        [77.2310, 28.6295],
+        [77.2345, 28.6258]
+      ],
+      "steps": [
+        {
+          "step_num": 1,
+          "instruction": "Head northeast towards Minto Road railway approach",
+          "distance_m": 350,
+          "shade_info": "Low shade, open road",
+          "water_nearby": null
+        },
+        {
+          "step_num": 2,
+          "instruction": "Descend into Minto Road sunken railway underpass",
+          "distance_m": 480,
+          "shade_info": "Concrete underpass walls; EXTREME FLOOD RISK IN MONSOON (depth > 1.5m)",
+          "water_nearby": "Submerged drainage trap"
+        },
+        {
+          "step_num": 3,
+          "instruction": "Ascend and emerge towards Deen Dayal Upadhyaya Marg to Mandi House",
+          "distance_m": 450,
+          "shade_info": "Moderate tree cover on sidewalk",
+          "water_nearby": null
+        }
+      ],
+      "segments": [
+        {
+          "name": "Minto Road Approach",
+          "length_m": 350,
+          "start_coords": [77.2195, 28.6328],
+          "end_coords": [77.2220, 28.6345],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.20,
+          "building_height_m": 12.0,
+          "street_width_m": 24.0,
+          "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "LOW",
+          "has_sidewalk": true,
+          "highway_type": "secondary",
+          "speed_limit_kmh": 35
+        },
+        {
+          "name": "Minto Road Sunken Underpass Inundation Zone",
+          "length_m": 480,
+          "start_coords": [77.2220, 28.6345],
+          "end_coords": [77.2265, 28.6330],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.05,
+          "building_height_m": 8.0,
+          "street_width_m": 20.0,
+          "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "SEVERE_SUBMERGED",
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
+        },
+        {
+          "name": "DDU Marg Approach to Mandi House",
+          "length_m": 450,
+          "start_coords": [77.2265, 28.6330],
+          "end_coords": [77.2345, 28.6258],
+          "surface_type": "asphalt",
+          "canopy_coverage": 0.30,
+          "building_height_m": 18.0,
+          "street_width_m": 28.0,
+          "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "MODERATE_PUDDLES",
+          "has_sidewalk": true,
+          "highway_type": "primary",
+          "speed_limit_kmh": 40
         }
       ]
     },
@@ -255,11 +474,14 @@
       "description": "High-speed vehicular flyover bypass without pedestrian footpaths or barriers. Intentionally included to validate hard safety filtering.",
       "total_length_m": 1420,
       "estimated_baseline_min": 14.2,
+      "waterlogging_risk": "NONE",
+      "is_covered": false,
       "path_coordinates": [
         [77.2195, 28.6328],
         [77.2250, 28.6310],
         [77.2345, 28.6258]
       ],
+      "steps": [],
       "segments": [
         {
           "name": "Barakhamba Elevated Flyover Ramp",
@@ -271,6 +493,8 @@
           "building_height_m": 0.0,
           "street_width_m": 22.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": false,
           "highway_type": "flyover",
           "speed_limit_kmh": 60,
@@ -287,11 +511,650 @@
           "building_height_m": 0.0,
           "street_width_m": 24.0,
           "is_colonnade": false,
+          "is_covered": false,
+          "waterlogging_risk": "NONE",
           "has_sidewalk": false,
           "highway_type": "trunk",
           "speed_limit_kmh": 60,
           "active_hazard": true,
           "hazard_description": "No pedestrian refuge island at high-speed interchange"
+        }
+      ]
+    }
+  ],
+  "corridors": [
+    {
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
+      "name": "Rajiv Chowk (Connaught Place) to Mandi House Metro Hub",
+      "city": "New Delhi",
+      "origin": {
+        "name": "Rajiv Chowk Metro Station (Gate 2)",
+        "coordinates": [77.2195, 28.6328]
+      },
+      "destination": {
+        "name": "Mandi House Metro Interchange",
+        "coordinates": [77.2345, 28.6258]
+      },
+      "default_zoom": 14.5,
+      "candidate_routes": [
+        "route-direct-barakhamba",
+        "route-canopy-kg-marg",
+        "route-colonnade-coolest",
+        "route-minto-underpass",
+        "route-unsafe-flyover-shortcut"
+      ]
+    },
+    {
+      "corridor_id": "DELHI_HAUZ_KHAS_TO_IIT",
+      "name": "Hauz Khas Metro to IIT Delhi Gate",
+      "city": "South Delhi",
+      "origin": {
+        "name": "Hauz Khas Metro Station (Gate 3)",
+        "coordinates": [77.2065, 28.5432]
+      },
+      "destination": {
+        "name": "IIT Delhi Main Gate",
+        "coordinates": [77.1925, 28.5450]
+      },
+      "default_zoom": 14.5,
+      "candidate_routes": [
+        {
+          "id": "route-iit-outer-ring",
+          "name": "Outer Ring Road Arterial Walkway",
+          "mode_candidate": "FASTEST",
+          "description": "Shortest arterial path alongside Sri Aurobindo Marg and Outer Ring Road. Wide open 6-lane highway boundary, sparse trees, hot asphalt.",
+          "total_length_m": 1580,
+          "estimated_baseline_min": 16.0,
+          "waterlogging_risk": "MODERATE_PUDDLES",
+          "is_covered": false,
+          "path_coordinates": [
+            [77.2065, 28.5432],
+            [77.2025, 28.5435],
+            [77.1975, 28.5440],
+            [77.1925, 28.5450]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Exit Hauz Khas Gate 3 and head west along Outer Ring Road pedestrian footpath",
+              "distance_m": 420,
+              "shade_info": "15% tree cover, direct sun",
+              "water_nearby": "Hauz Khas Metro Gate 3 Water ATM"
+            },
+            {
+              "step_num": 2,
+              "instruction": "Cross Aurobindo Marg signal junction and continue along highway fence",
+              "distance_m": 540,
+              "shade_info": "20% low hedge shade, high asphalt heat radiation",
+              "water_nearby": null
+            },
+            {
+              "step_num": 3,
+              "instruction": "Arrive at IIT Delhi Main Gate security barrier",
+              "distance_m": 620,
+              "shade_info": "25% shade near institutional perimeter wall",
+              "water_nearby": "IIT Delhi Main Gate Hydration Kiosk"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Hauz Khas Outer Ring Link",
+              "length_m": 420,
+              "start_coords": [77.2065, 28.5432],
+              "end_coords": [77.2025, 28.5435],
+              "surface_type": "asphalt",
+              "canopy_coverage": 0.15,
+              "building_height_m": 10.0,
+              "street_width_m": 35.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "MODERATE_PUDDLES",
+              "has_sidewalk": true,
+              "highway_type": "primary",
+              "speed_limit_kmh": 45
+            },
+            {
+              "name": "Outer Ring Road Pedestrian Stretch",
+              "length_m": 540,
+              "start_coords": [77.2025, 28.5435],
+              "end_coords": [77.1975, 28.5440],
+              "surface_type": "asphalt",
+              "canopy_coverage": 0.18,
+              "building_height_m": 12.0,
+              "street_width_m": 40.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "MODERATE_PUDDLES",
+              "has_sidewalk": true,
+              "highway_type": "primary",
+              "speed_limit_kmh": 45
+            },
+            {
+              "name": "IIT Perimeter Approach",
+              "length_m": 620,
+              "start_coords": [77.1975, 28.5440],
+              "end_coords": [77.1925, 28.5450],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.25,
+              "building_height_m": 14.0,
+              "street_width_m": 30.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "primary",
+              "speed_limit_kmh": 40
+            }
+          ]
+        },
+        {
+          "id": "route-iit-rose-garden",
+          "name": "Rose Garden & Gulmohar Green Greenway",
+          "mode_candidate": "COOLEST",
+          "description": "Scenic parkland route winding through Hauz Khas Rose Garden trails and mature Gulmohar trees into SDA enclave.",
+          "total_length_m": 1820,
+          "estimated_baseline_min": 18.2,
+          "waterlogging_risk": "NONE",
+          "is_covered": false,
+          "path_coordinates": [
+            [77.2065, 28.5432],
+            [77.2040, 28.5470],
+            [77.1985, 28.5480],
+            [77.1950, 28.5465],
+            [77.1925, 28.5450]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Turn north into the Hauz Khas Rose Garden shaded pedestrian entrance",
+              "distance_m": 450,
+              "shade_info": "80% deep park tree cover, grass lawns absorb thermal radiation",
+              "water_nearby": "Garden Drinking Fountain"
+            },
+            {
+              "step_num": 2,
+              "instruction": "Follow stone paver walking path under continuous Gulmohar canopy",
+              "distance_m": 580,
+              "shade_info": "85% dense overlapping tree canopy",
+              "water_nearby": null
+            },
+            {
+              "step_num": 3,
+              "instruction": "Exit park gate into quiet SDA green residential lane",
+              "distance_m": 430,
+              "shade_info": "75% tree shade, low traffic paver surface",
+              "water_nearby": "SDA Commercial Market Public Cooler (120m south)"
+            },
+            {
+              "step_num": 4,
+              "instruction": "Cross shaded university lane directly into IIT Delhi Main Gate",
+              "distance_m": 360,
+              "shade_info": "70% shade from university campus trees",
+              "water_nearby": "IIT Delhi Main Gate Hydration Kiosk"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Rose Garden Parkland Entry",
+              "length_m": 450,
+              "start_coords": [77.2065, 28.5432],
+              "end_coords": [77.2040, 28.5470],
+              "surface_type": "vegetated",
+              "canopy_coverage": 0.80,
+              "building_height_m": 8.0,
+              "street_width_m": 10.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "footway",
+              "speed_limit_kmh": 0
+            },
+            {
+              "name": "Gulmohar Canopy Parkland Trail",
+              "length_m": 580,
+              "start_coords": [77.2040, 28.5470],
+              "end_coords": [77.1985, 28.5480],
+              "surface_type": "vegetated",
+              "canopy_coverage": 0.85,
+              "building_height_m": 6.0,
+              "street_width_m": 8.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "footway",
+              "speed_limit_kmh": 0
+            },
+            {
+              "name": "SDA Green Residential Boulevard",
+              "length_m": 430,
+              "start_coords": [77.1985, 28.5480],
+              "end_coords": [77.1950, 28.5465],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.75,
+              "building_height_m": 12.0,
+              "street_width_m": 14.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "residential",
+              "speed_limit_kmh": 20
+            },
+            {
+              "name": "IIT North Campus Approach",
+              "length_m": 360,
+              "start_coords": [77.1950, 28.5465],
+              "end_coords": [77.1925, 28.5450],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.70,
+              "building_height_m": 14.0,
+              "street_width_m": 18.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "secondary",
+              "speed_limit_kmh": 30
+            }
+          ]
+        },
+        {
+          "id": "route-iit-sda-arcade",
+          "name": "SDA Market Covered Arcade & Shaded Lane",
+          "mode_candidate": "BALANCED",
+          "description": "Passes through the covered pedestrian verandas of SDA Market, offering commercial canopies, water kiosks, and cool stone arcades.",
+          "total_length_m": 1690,
+          "estimated_baseline_min": 17.2,
+          "waterlogging_risk": "LOW",
+          "is_covered": true,
+          "path_coordinates": [
+            [77.2065, 28.5432],
+            [77.2015, 28.5448],
+            [77.1970, 28.5455],
+            [77.1925, 28.5450]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Walk along Sri Aurobindo Marg shaded service lane",
+              "distance_m": 510,
+              "shade_info": "50% tree shade",
+              "water_nearby": "Hauz Khas Metro ATM"
+            },
+            {
+              "step_num": 2,
+              "instruction": "Walk through SDA commercial market pedestrian covered arcades",
+              "distance_m": 530,
+              "shade_info": "90% covered awnings & building shadows; dry during monsoon",
+              "water_nearby": "SDA Commercial Market Public Cooler"
+            },
+            {
+              "step_num": 3,
+              "instruction": "Cross quiet connector road directly to IIT Main Gate",
+              "distance_m": 650,
+              "shade_info": "60% tree cover",
+              "water_nearby": "IIT Delhi Main Gate Hydration Kiosk"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Aurobindo Service Lane",
+              "length_m": 510,
+              "start_coords": [77.2065, 28.5432],
+              "end_coords": [77.2015, 28.5448],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.50,
+              "building_height_m": 14.0,
+              "street_width_m": 16.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "tertiary",
+              "speed_limit_kmh": 30
+            },
+            {
+              "name": "SDA Market Covered Arcade",
+              "length_m": 530,
+              "start_coords": [77.2015, 28.5448],
+              "end_coords": [77.1970, 28.5455],
+              "surface_type": "paver_colonnade",
+              "canopy_coverage": 0.30,
+              "building_height_m": 16.0,
+              "street_width_m": 12.0,
+              "is_colonnade": true,
+              "is_covered": true,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "pedestrian",
+              "speed_limit_kmh": 0
+            },
+            {
+              "name": "IIT Flyover Connector Sidewalk",
+              "length_m": 650,
+              "start_coords": [77.1970, 28.5455],
+              "end_coords": [77.1925, 28.5450],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.60,
+              "building_height_m": 15.0,
+              "street_width_m": 22.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "secondary",
+              "speed_limit_kmh": 35
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "corridor_id": "DELHI_CHANDNI_CHOWK",
+      "name": "Chandni Chowk Metro to Red Fort Heritage Walk",
+      "city": "Old Delhi",
+      "origin": {
+        "name": "Chandni Chowk Metro Station (Gate 1)",
+        "coordinates": [77.2285, 28.6575]
+      },
+      "destination": {
+        "name": "Red Fort (Lahori Gate)",
+        "coordinates": [77.2410, 28.6560]
+      },
+      "default_zoom": 15.0,
+      "candidate_routes": [
+        {
+          "id": "route-cc-heritage-mall",
+          "name": "Chandni Chowk Pedestrian Heritage Mall",
+          "mode_candidate": "FASTEST",
+          "description": "Pedestrianized red sandstone corridor with broad walking promenades, water misting poles, and electric rickshaw lanes.",
+          "total_length_m": 1350,
+          "estimated_baseline_min": 13.8,
+          "waterlogging_risk": "LOW",
+          "is_covered": false,
+          "path_coordinates": [
+            [77.2285, 28.6575],
+            [77.2325, 28.6568],
+            [77.2370, 28.6564],
+            [77.2410, 28.6560]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Exit Chandni Chowk Metro Gate 1 onto the central pedestrian mall",
+              "distance_m": 400,
+              "shade_info": "40% umbrella and tree shade, red sandstone paving",
+              "water_nearby": "Chandni Chowk Metro Concourse Hydration Point"
+            },
+            {
+              "step_num": 2,
+              "instruction": "Pass Sis Ganj Sahib Gurudwara and Fountain Chowk",
+              "distance_m": 450,
+              "shade_info": "50% shade, heritage building facade shadows",
+              "water_nearby": "Gurudwara Sis Ganj Sahib Free Chhabil"
+            },
+            {
+              "step_num": 3,
+              "instruction": "Walk past Gauri Shankar Temple towards Red Fort Lahori Gate plaza",
+              "distance_m": 500,
+              "shade_info": "35% shade, wide open pedestrian plaza",
+              "water_nearby": "Red Fort Plaza Tourist Drinking Fountain"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Town Hall to Sis Ganj Mall",
+              "length_m": 400,
+              "start_coords": [77.2285, 28.6575],
+              "end_coords": [77.2325, 28.6568],
+              "surface_type": "paver_colonnade",
+              "canopy_coverage": 0.40,
+              "building_height_m": 14.0,
+              "street_width_m": 22.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "pedestrian",
+              "speed_limit_kmh": 0
+            },
+            {
+              "name": "Sis Ganj to Fountain Chowk",
+              "length_m": 450,
+              "start_coords": [77.2325, 28.6568],
+              "end_coords": [77.2370, 28.6564],
+              "surface_type": "paver_colonnade",
+              "canopy_coverage": 0.50,
+              "building_height_m": 15.0,
+              "street_width_m": 20.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "pedestrian",
+              "speed_limit_kmh": 0
+            },
+            {
+              "name": "Red Fort Esplanade Approach",
+              "length_m": 500,
+              "start_coords": [77.2370, 28.6564],
+              "end_coords": [77.2410, 28.6560],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.35,
+              "building_height_m": 12.0,
+              "street_width_m": 30.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "pedestrian",
+              "speed_limit_kmh": 0
+            }
+          ]
+        },
+        {
+          "id": "route-cc-dariba-haveli",
+          "name": "Dariba Kalan & Kinari Bazaar Haveli Canyons",
+          "mode_candidate": "COOLEST",
+          "description": "Historic 300-year-old narrow urban street canyons (4m wide). Deep haveli building overhangs provide complete all-day shade and rain shielding.",
+          "total_length_m": 1520,
+          "estimated_baseline_min": 16.2,
+          "waterlogging_risk": "NONE",
+          "is_covered": true,
+          "path_coordinates": [
+            [77.2285, 28.6575],
+            [77.2310, 28.6550],
+            [77.2360, 28.6545],
+            [77.2395, 28.6552],
+            [77.2410, 28.6560]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Divert south into Dariba Kalan narrow jewelry street canyon",
+              "distance_m": 380,
+              "shade_info": "92% continuous shadow from 3-storey traditional havelis",
+              "water_nearby": "Kinari Bazaar Heritage Water Kiosk"
+            },
+            {
+              "step_num": 2,
+              "instruction": "Wind through Kinari Bazaar covered awning corridor",
+              "distance_m": 520,
+              "shade_info": "95% shade and rain cover under overhead fabric & wooden chhatris",
+              "water_nearby": null
+            },
+            {
+              "step_num": 3,
+              "instruction": "Turn towards Jama Masjid North Gate shaded alley",
+              "distance_m": 340,
+              "shade_info": "85% shade from sandstone walls",
+              "water_nearby": null
+            },
+            {
+              "step_num": 4,
+              "instruction": "Emerge onto Subhash Park shaded perimeter to Red Fort Lahori Gate",
+              "distance_m": 280,
+              "shade_info": "70% shade from mature Banyan trees",
+              "water_nearby": "Red Fort Plaza Tourist Drinking Fountain"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Dariba Kalan Silver Bazaar Canyon",
+              "length_m": 380,
+              "start_coords": [77.2285, 28.6575],
+              "end_coords": [77.2310, 28.6550],
+              "surface_type": "paver_colonnade",
+              "canopy_coverage": 0.10,
+              "building_height_m": 16.0,
+              "street_width_m": 4.5,
+              "is_colonnade": true,
+              "is_covered": true,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "living_street",
+              "speed_limit_kmh": 15
+            },
+            {
+              "name": "Kinari Bazaar Narrow Haveli Canyon",
+              "length_m": 520,
+              "start_coords": [77.2310, 28.6550],
+              "end_coords": [77.2360, 28.6545],
+              "surface_type": "paver_colonnade",
+              "canopy_coverage": 0.15,
+              "building_height_m": 18.0,
+              "street_width_m": 4.0,
+              "is_colonnade": true,
+              "is_covered": true,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "living_street",
+              "speed_limit_kmh": 15
+            },
+            {
+              "name": "Gali Guliyan Shaded Alley",
+              "length_m": 340,
+              "start_coords": [77.2360, 28.6545],
+              "end_coords": [77.2395, 28.6552],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.40,
+              "building_height_m": 14.0,
+              "street_width_m": 5.5,
+              "is_colonnade": false,
+              "is_covered": true,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "living_street",
+              "speed_limit_kmh": 15
+            },
+            {
+              "name": "Subhash Park Banyan Tree Approach",
+              "length_m": 280,
+              "start_coords": [77.2395, 28.6552],
+              "end_coords": [77.2410, 28.6560],
+              "surface_type": "vegetated",
+              "canopy_coverage": 0.70,
+              "building_height_m": 10.0,
+              "street_width_m": 18.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "NONE",
+              "has_sidewalk": true,
+              "highway_type": "footway",
+              "speed_limit_kmh": 0
+            }
+          ]
+        },
+        {
+          "id": "route-cc-netaji-subhash",
+          "name": "Netaji Subhash Marg Arterial Road",
+          "mode_candidate": "BALANCED",
+          "description": "Broad arterial road skirting the eastern boundary. Heavy vehicular traffic, asphalt blacktop, high solar reflection.",
+          "total_length_m": 1640,
+          "estimated_baseline_min": 16.8,
+          "waterlogging_risk": "MODERATE_PUDDLES",
+          "is_covered": false,
+          "path_coordinates": [
+            [77.2285, 28.6575],
+            [77.2330, 28.6590],
+            [77.2380, 28.6580],
+            [77.2410, 28.6560]
+          ],
+          "steps": [
+            {
+              "step_num": 1,
+              "instruction": "Walk north towards Old Delhi Railway Station road link",
+              "distance_m": 450,
+              "shade_info": "20% shade, open traffic road",
+              "water_nearby": null
+            },
+            {
+              "step_num": 2,
+              "instruction": "Follow Netaji Subhash Marg sidewalk along Red Fort moat perimeter",
+              "distance_m": 690,
+              "shade_info": "30% tree shade from roadside neem trees",
+              "water_nearby": null
+            },
+            {
+              "step_num": 3,
+              "instruction": "Arrive at Red Fort Main Entrance Gates",
+              "distance_m": 500,
+              "shade_info": "25% shade",
+              "water_nearby": "Red Fort Plaza Tourist Drinking Fountain"
+            }
+          ],
+          "segments": [
+            {
+              "name": "Railway Station Road Link",
+              "length_m": 450,
+              "start_coords": [77.2285, 28.6575],
+              "end_coords": [77.2330, 28.6590],
+              "surface_type": "asphalt",
+              "canopy_coverage": 0.20,
+              "building_height_m": 12.0,
+              "street_width_m": 28.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "MODERATE_PUDDLES",
+              "has_sidewalk": true,
+              "highway_type": "primary",
+              "speed_limit_kmh": 40
+            },
+            {
+              "name": "Netaji Subhash Marg Moat Section",
+              "length_m": 690,
+              "start_coords": [77.2330, 28.6590],
+              "end_coords": [77.2380, 28.6580],
+              "surface_type": "asphalt",
+              "canopy_coverage": 0.30,
+              "building_height_m": 10.0,
+              "street_width_m": 32.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "MODERATE_PUDDLES",
+              "has_sidewalk": true,
+              "highway_type": "primary",
+              "speed_limit_kmh": 40
+            },
+            {
+              "name": "Lahori Gate North Plaza",
+              "length_m": 500,
+              "start_coords": [77.2380, 28.6580],
+              "end_coords": [77.2410, 28.6560],
+              "surface_type": "concrete",
+              "canopy_coverage": 0.25,
+              "building_height_m": 15.0,
+              "street_width_m": 25.0,
+              "is_colonnade": false,
+              "is_covered": false,
+              "waterlogging_risk": "LOW",
+              "has_sidewalk": true,
+              "highway_type": "secondary",
+              "speed_limit_kmh": 35
+            }
+          ]
         }
       ]
     }

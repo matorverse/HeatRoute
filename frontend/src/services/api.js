@@ -4,13 +4,31 @@
  * with deterministic in-browser calculation fallback so demos NEVER fail.
  */
 
-import { FALLBACK_EVALUATION, FALLBACK_HYDRATION_POIS } from "../data/fallbackData";
+import { FALLBACK_CORRIDORS, FALLBACK_EVALUATION, FALLBACK_HYDRATION_POIS } from "../data/fallbackData";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
-// Fast in-memory cache for repeated time/weather parameters
+// Fast in-memory cache for repeated time/weather/corridor parameters
 const evaluationCache = new Map();
 const MAX_CACHE_SIZE = 50;
+
+export async function fetchCorridors() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${BACKEND_URL}/api/v1/corridors`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.corridors && data.corridors.length > 0) {
+        return data.corridors;
+      }
+    }
+  } catch (e) {
+    // Fallback to local corridors
+  }
+  return FALLBACK_CORRIDORS;
+}
 
 export async function fetchRouteEvaluation(params = {}) {
   const {
@@ -18,10 +36,13 @@ export async function fetchRouteEvaluation(params = {}) {
     ambientTempC = 43.5,
     humidityPct = 42.0,
     modePreference = "BALANCED",
-    maxDetourPercent = 25.0
+    maxDetourPercent = 25.0,
+    season = "SUMMER",
+    corridorId = "DELHI_CP_TO_MANDI_HOUSE",
+    pitstopPoiId = null
   } = params;
 
-  const cacheKey = `${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}_${maxDetourPercent}`;
+  const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}`;
   if (evaluationCache.has(cacheKey)) {
     return evaluationCache.get(cacheKey);
   }
@@ -37,13 +58,14 @@ export async function fetchRouteEvaluation(params = {}) {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        origin: [77.2195, 28.6328],
-        destination: [77.2345, 28.6258],
         departure_time: departureTime,
         ambient_temp_c: ambientTempC,
         relative_humidity: humidityPct,
         max_detour_percent: maxDetourPercent,
-        mode_preference: modePreference
+        mode_preference: modePreference,
+        season: season,
+        corridor_id: corridorId,
+        pitstop_poi_id: pitstopPoiId
       })
     });
 
@@ -58,8 +80,16 @@ export async function fetchRouteEvaluation(params = {}) {
   }
 
   if (!result) {
-    // Resilient deterministic client-side calculation for departure time shifts
-    result = simulateTimeShiftEvaluation(departureTime, ambientTempC, humidityPct, modePreference);
+    // Resilient deterministic client-side calculation
+    result = simulateDynamicEvaluation({
+      departureTime,
+      ambientTempC,
+      humidityPct,
+      modePreference,
+      season,
+      corridorId,
+      pitstopPoiId
+    });
   }
 
   // Cache result
@@ -73,14 +103,21 @@ export async function fetchRouteEvaluation(params = {}) {
 }
 
 /**
- * Calculates in-browser dynamic solar & exposure shifts with zero-copy route mapping
+ * Calculates in-browser dynamic solar, monsoon hazard, and exposure shifts
  */
-function simulateTimeShiftEvaluation(timeIso, tempC, humidityPct, modePref) {
-  const date = new Date(timeIso);
+function simulateDynamicEvaluation({
+  departureTime,
+  ambientTempC,
+  humidityPct,
+  modePreference,
+  season,
+  corridorId,
+  pitstopPoiId
+}) {
+  const isMonsoon = (season?.toUpperCase() === "MONSOON");
+  const date = new Date(departureTime);
   const hour = date.getHours() + date.getMinutes() / 60;
 
-  // Approximate solar altitude for Delhi in June
-  // Peaks around 12:45 - 1:30 PM (~75°), drops in late afternoon
   let solarAlt = 0;
   if (hour >= 6 && hour <= 19) {
     solarAlt = Math.max(5, Math.sin(((hour - 6) / 13) * Math.PI) * 75);
@@ -89,69 +126,162 @@ function simulateTimeShiftEvaluation(timeIso, tempC, humidityPct, modePref) {
   const isLateAfternoon = hour >= 16.0;
   const isMorning = hour <= 10.0;
 
-  // Optimized shallow clone reusing immutable coordinate geometries
-  const cloned = {
-    ...FALLBACK_EVALUATION,
-    is_live_cloud: false,
-    is_fallback_mode: true,
-    departure_time: timeIso,
-    solar_altitude_deg: Math.round(solarAlt * 10) / 10,
-    ambient_temp_c: tempC,
-    relative_humidity: humidityPct,
-    routes: FALLBACK_EVALUATION.routes.map(r => ({ ...r }))
-  };
+  // Selected corridor POIs
+  const corridorPois = FALLBACK_HYDRATION_POIS.filter(
+    p => p.corridor_id === (corridorId || "DELHI_CP_TO_MANDI_HOUSE")
+  );
 
-  // Modify route exposures based on time-dependent shade
-  cloned.routes.forEach(route => {
-    if (route.mode === "REJECTED_UNSAFE") return;
+  const matchedPoi = pitstopPoiId ? FALLBACK_HYDRATION_POIS.find(p => p.id === pitstopPoiId) : null;
 
-    if (route.id === "route-direct-barakhamba") {
-      // Barakhamba road gets tall commercial building shadow in late afternoon (sun in west)
-      if (isLateAfternoon) {
-        route.avg_shade_percentage = 62.5;
-        route.raw_exposure_score = 485.4;
-        route.exposure_label = "LOW";
-        route.exposure_color = "#10B981";
-      } else if (isMorning) {
-        route.avg_shade_percentage = 45.0;
-        route.raw_exposure_score = 590.2;
-        route.exposure_label = "MODERATE";
-        route.exposure_color = "#F59E0B";
-      } else {
-        route.avg_shade_percentage = 15.2;
-        route.raw_exposure_score = 877.3;
-        route.exposure_label = "HIGH";
-        route.exposure_color = "#EF4444";
+  // Shallow copy of fallback routes
+  let clonedRoutes = FALLBACK_EVALUATION.routes.map(r => ({
+    ...r,
+    path_coordinates: [...r.path_coordinates]
+  }));
+
+  if (isMonsoon) {
+    // MONSOON HAZARD ENGINE:
+    // Reject Minto Road Underpass due to flood inundation
+    clonedRoutes = clonedRoutes.map(route => {
+      if (route.id === "route-minto-underpass") {
+        return {
+          ...route,
+          mode: "REJECTED_UNSAFE",
+          is_recommended: false,
+          exposure_color: "#9CA3AF",
+          safety: {
+            passed_safety_filter: false,
+            safety_verdict: "REJECTED_UNSAFE",
+            safety_score: 0.0,
+            violations: [
+              "Segment 2 (Minto Road Sunken Underpass Inundation Zone): Severe Monsoon Inundation: Minto Road Sunken Underpass is waterlogged with standing water depth > 1.2m"
+            ]
+          },
+          contributing_factors: [
+            "FAILED MONSOON SAFETY: Extreme waterlogging & flood hazard in sunken underpass"
+          ]
+        };
       }
-    } else if (route.id === "route-canopy-kg-marg") {
-      route.avg_shade_percentage = 74.0;
-      route.raw_exposure_score = isLateAfternoon ? 460.0 : 667.5;
-      route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
-      route.exposure_color = isLateAfternoon ? "#10B981" : "#F59E0B";
-    } else if (route.id === "route-colonnade-coolest") {
-      route.avg_shade_percentage = 88.0;
-      route.raw_exposure_score = isLateAfternoon ? 430.0 : 597.7;
-      route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
-      route.exposure_color = "#10B981";
-    }
-  });
-
-  // Re-compute percentage savings relative to fastest
-  const fastest = cloned.routes.find(r => r.id === "route-direct-barakhamba");
-  cloned.routes.forEach(r => {
-    if (r.mode !== "REJECTED_UNSAFE" && fastest) {
-      const saved = ((fastest.raw_exposure_score - r.raw_exposure_score) / fastest.raw_exposure_score) * 100;
-      r.exposure_reduction_pct = Math.max(0, Math.round(saved * 10) / 10);
-    }
-  });
-
-  // Format decision summary
-  const timeFormatted = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (isLateAfternoon) {
-    cloned.decision_summary = `At ${timeFormatted} (Sun Angle: ${cloned.solar_altitude_deg}°), high-rise towers along Barakhamba cast deep canyon shadows. Thermal exposure drops significantly across all corridors.`;
+      if (route.id === "route-colonnade-coolest") {
+        return {
+          ...route,
+          mode: "SAFEST_DRY",
+          is_recommended: true,
+          exposure_label: "LOW",
+          exposure_color: "#10B981"
+        };
+      }
+      if (route.id === "route-direct-barakhamba") {
+        return {
+          ...route,
+          mode: "FASTEST",
+          is_recommended: false,
+          exposure_label: "MODERATE",
+          exposure_color: "#F59E0B"
+        };
+      }
+      return route;
+    });
   } else {
-    cloned.decision_summary = `At ${timeFormatted} (Sun Angle: ${cloned.solar_altitude_deg}°), midday direct sunlight is intense. CP Colonnade & KG Marg routes provide 24% to 32% thermal exposure reduction.`;
+    // SUMMER HEAT ENGINE
+    clonedRoutes.forEach(route => {
+      if (route.mode === "REJECTED_UNSAFE") return;
+
+      if (route.id === "route-direct-barakhamba") {
+        if (isLateAfternoon) {
+          route.avg_shade_percentage = 62.5;
+          route.raw_exposure_score = 485.4;
+          route.exposure_label = "LOW";
+          route.exposure_color = "#10B981";
+        } else if (isMorning) {
+          route.avg_shade_percentage = 45.0;
+          route.raw_exposure_score = 590.2;
+          route.exposure_label = "MODERATE";
+          route.exposure_color = "#F59E0B";
+        } else {
+          route.avg_shade_percentage = 15.2;
+          route.raw_exposure_score = 877.3;
+          route.exposure_label = "HIGH";
+          route.exposure_color = "#EF4444";
+        }
+      } else if (route.id === "route-canopy-kg-marg") {
+        route.avg_shade_percentage = 74.0;
+        route.raw_exposure_score = isLateAfternoon ? 460.0 : 667.5;
+        route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
+        route.exposure_color = isLateAfternoon ? "#10B981" : "#F59E0B";
+      } else if (route.id === "route-colonnade-coolest") {
+        route.avg_shade_percentage = 88.0;
+        route.raw_exposure_score = isLateAfternoon ? 430.0 : 597.7;
+        route.exposure_label = isLateAfternoon ? "LOW" : "MODERATE";
+        route.exposure_color = "#10B981";
+      }
+    });
+
+    const fastest = clonedRoutes.find(r => r.id === "route-minto-underpass" && r.mode !== "REJECTED_UNSAFE") ||
+                    clonedRoutes.find(r => r.id === "route-direct-barakhamba");
+    
+    if (fastest) {
+      clonedRoutes.forEach(r => {
+        if (r.mode !== "REJECTED_UNSAFE") {
+          const saved = ((fastest.raw_exposure_score - r.raw_exposure_score) / fastest.raw_exposure_score) * 100;
+          r.exposure_reduction_pct = Math.max(0, Math.round(saved * 10) / 10);
+        }
+      });
+    }
   }
 
-  return cloned;
+  // If pitstop POI was inserted, inject into coordinates
+  if (matchedPoi) {
+    clonedRoutes.forEach(r => {
+      if (r.path_coordinates.length >= 2) {
+        const mid = Math.floor(r.path_coordinates.length / 2);
+        r.path_coordinates = [
+          ...r.path_coordinates.slice(0, mid),
+          matchedPoi.coordinates,
+          ...r.path_coordinates.slice(mid)
+        ];
+        r.total_duration_min = Math.round((r.total_duration_min + 1.5) * 10) / 10;
+      }
+    });
+  }
+
+  const timeFormatted = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  let decisionSummary = "";
+  const pitstopNote = matchedPoi ? ` (Includes hydration stop at ${matchedPoi.name})` : "";
+
+  if (isMonsoon) {
+    decisionSummary = `⛈️ Monsoon Downpour Advisory (${timeFormatted}): CP Colonnade Arcade & Shaded Lane recommended for 100% covered rain shelters and zero standing water. ⚠️ Minto Sunken Underpass disqualified (1.8m flood hazard).${pitstopNote}`;
+  } else if (isLateAfternoon) {
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): High-rise towers along Barakhamba cast deep canyon shadows. Thermal exposure drops significantly across all corridors.${pitstopNote}`;
+  } else {
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): CP Colonnade & KG Marg routes provide 24% to 32% thermal exposure reduction under mature canopies.${pitstopNote}`;
+  }
+
+  const activeCorridor = FALLBACK_CORRIDORS.find(c => c.id === corridorId) || FALLBACK_CORRIDOR;
+
+  return {
+    ...FALLBACK_EVALUATION,
+    status: "SUCCESS",
+    is_live_cloud: false,
+    is_fallback_mode: true,
+    corridor_id: activeCorridor.id,
+    corridor_name: activeCorridor.name,
+    active_season: isMonsoon ? "MONSOON" : "SUMMER",
+    departure_time: departureTime,
+    solar_altitude_deg: Math.round(solarAlt * 10) / 10,
+    ambient_temp_c: isMonsoon ? 32.5 : ambientTempC,
+    relative_humidity: isMonsoon ? 85.0 : humidityPct,
+    heat_index_c: isMonsoon ? 42.1 : 59.8,
+    routes: clonedRoutes,
+    hydration_pois: corridorPois,
+    decision_summary: decisionSummary,
+    aws_telemetry: {
+      ...FALLBACK_EVALUATION.aws_telemetry,
+      cloudwatch_metric: {
+        metric_name: isMonsoon ? "FloodInundationHazardsBypassed" : "ThermalStressHoursAvoided",
+        value: isMonsoon ? 1.0 : 13.98,
+        unit: isMonsoon ? "Hazards" : "StressHours"
+      }
+    }
+  };
 }

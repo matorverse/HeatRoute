@@ -19,6 +19,9 @@ class RouteRequest(BaseModel):
     relative_humidity: Optional[float] = Field(default=48.0, description="Relative humidity override %")
     max_detour_percent: Optional[float] = Field(default=25.0, description="Max acceptable detour vs fastest route")
     mode_preference: Optional[str] = Field(default="BALANCED", description="FASTEST | BALANCED | COOLEST")
+    season: Optional[str] = Field(default="SUMMER", description="SUMMER | MONSOON")
+    corridor_id: Optional[str] = Field(default="DELHI_CP_TO_MANDI_HOUSE", description="Corridor identifier")
+    pitstop_poi_id: Optional[str] = Field(default=None, description="Optional hydration POI waypoint")
 
 
 class SegmentOutput(BaseModel):
@@ -32,6 +35,8 @@ class SegmentOutput(BaseModel):
     segment_exposure_score: float
     start_coords: List[float]
     end_coords: List[float]
+    is_covered: Optional[bool] = False
+    waterlogging_risk: Optional[str] = "NONE"
 
 
 class SafetyInfo(BaseModel):
@@ -39,6 +44,14 @@ class SafetyInfo(BaseModel):
     safety_verdict: str
     safety_score: float
     violations: List[str] = []
+
+
+class NavigationStep(BaseModel):
+    step_num: int
+    instruction: str
+    distance_m: float
+    shade_info: str
+    water_nearby: Optional[str] = None
 
 
 class EvaluatedRoute(BaseModel):
@@ -55,11 +68,13 @@ class EvaluatedRoute(BaseModel):
     exposure_color: str
     exposure_reduction_pct: float
     avg_shade_percentage: float
+    waterlogging_risk: Optional[str] = "NONE"
     safety: SafetyInfo
     contributing_factors: List[str]
     confidence: str
     path_coordinates: List[List[float]]
     segments: List[SegmentOutput]
+    steps: Optional[List[NavigationStep]] = []
 
 
 class HydrationPOI(BaseModel):
@@ -75,7 +90,9 @@ class HydrationPOI(BaseModel):
 
 class RouteResponse(BaseModel):
     status: str
+    corridor_id: str = "DELHI_CP_TO_MANDI_HOUSE"
     corridor_name: str
+    active_season: str = "SUMMER"
     departure_time: str
     solar_altitude_deg: float
     solar_azimuth_deg: float

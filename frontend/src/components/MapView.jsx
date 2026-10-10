@@ -54,28 +54,36 @@ function MapView({
   hydrationPois = [],
   showHydration,
   solarAltitude = 70,
-  solarAzimuth = 280
+  solarAzimuth = 280,
+  activeCorridor,
+  activePitstopPoiId,
+  onTogglePitstop
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  const pitstopMarkerRef = useRef(null);
+  const currentCorridorIdRef = useRef(activeCorridor?.id);
 
   // Initialize MapLibre with Amazon Location Service or Carto Fallback
   useEffect(() => {
     if (mapRef.current) return;
 
     const initialStyle = AWS_STYLE_URL || DARK_MAP_STYLE;
+    const initialOrigin = activeCorridor?.origin?.coordinates || [77.2195, 28.6328];
+    const initialDest = activeCorridor?.destination?.coordinates || [77.2345, 28.6258];
+    const centerLon = (initialOrigin[0] + initialDest[0]) / 2;
+    const centerLat = (initialOrigin[1] + initialDest[1]) / 2;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: initialStyle,
-      center: [77.2270, 28.6293], // Central Delhi (CP - Mandi House)
-      zoom: 14.5,
+      center: [centerLon, centerLat],
+      zoom: activeCorridor?.default_zoom || 14.5,
       pitch: 35,
       bearing: -15,
       attributionControl: false,
       transformRequest: (url) => {
-        // Automatically attach API Key to AWS Location Service tile/sprite/glyph requests
         if (AWS_API_KEY && url.includes("amazonaws.com") && !url.includes("key=")) {
           const sep = url.includes("?") ? "&" : "?";
           return { url: `${url}${sep}key=${AWS_API_KEY}` };
@@ -84,7 +92,6 @@ function MapView({
       }
     });
 
-    // Handle fallback if AWS style fails to load (e.g., expired key or network blockage)
     map.on("error", (e) => {
       if (AWS_STYLE_URL && (e?.error?.message?.includes("style") || e?.error?.status === 403)) {
         console.warn("Notice: AWS Location Service style load issue, falling back to local base style:", e);
@@ -100,6 +107,7 @@ function MapView({
       mapRef.current = map;
       updateRouteLayers(map, routes, selectedRouteId);
       updatePoiMarkers(map, hydrationPois, showHydration);
+      updateOriginDestinationMarkers(map, activeCorridor);
     });
 
     return () => {
@@ -145,7 +153,55 @@ function MapView({
     } else {
       mapRef.current.once("load", applyPois);
     }
-  }, [hydrationPois, showHydration]);
+  }, [hydrationPois, showHydration, activePitstopPoiId]);
+
+  // Handle Corridor Switching (FlyTo + Origin/Destination Pin Relocation)
+  useEffect(() => {
+    if (!mapRef.current || !activeCorridor) return;
+    
+    updateOriginDestinationMarkers(mapRef.current, activeCorridor);
+
+    if (currentCorridorIdRef.current !== activeCorridor.id) {
+      currentCorridorIdRef.current = activeCorridor.id;
+      const origin = activeCorridor.origin?.coordinates || [77.2195, 28.6328];
+      const dest = activeCorridor.destination?.coordinates || [77.2345, 28.6258];
+      const centerLon = (origin[0] + dest[0]) / 2;
+      const centerLat = (origin[1] + dest[1]) / 2;
+
+      mapRef.current.flyTo({
+        center: [centerLon, centerLat],
+        zoom: activeCorridor.default_zoom || 14.5,
+        pitch: 35,
+        bearing: -15,
+        duration: 1000
+      });
+    }
+  }, [activeCorridor]);
+
+  // Handle Pitstop POI Marker Highlighting
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (pitstopMarkerRef.current) {
+      pitstopMarkerRef.current.remove();
+      pitstopMarkerRef.current = null;
+    }
+
+    if (activePitstopPoiId && hydrationPois) {
+      const poi = hydrationPois.find(p => p.id === activePitstopPoiId);
+      if (poi && poi.coordinates) {
+        const el = document.createElement("div");
+        el.className = "marker-pitstop-active";
+        el.innerHTML = "💧";
+        el.title = `Active Hydration Pitstop: ${poi.name}`;
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat(poi.coordinates)
+          .addTo(mapRef.current);
+
+        pitstopMarkerRef.current = marker;
+      }
+    }
+  }, [activePitstopPoiId, hydrationPois]);
 
   function updateRouteLayers(map, routeList, activeId) {
     if (!routeList || routeList.length === 0) return;
@@ -177,21 +233,17 @@ function MapView({
     const source = map.getSource("routes-source");
 
     if (source) {
-      // High-performance path: Update source data without tearing down WebGL layers
       source.setData(geojsonData);
-
-      // Instant O(1) GPU layer filter updates
       map.setFilter("route-layer-inactive", ["!=", ["get", "id"], activeId || ""]);
       map.setFilter("route-layer-glow", ["==", ["get", "id"], activeId || ""]);
       map.setFilter("route-layer-active", ["==", ["get", "id"], activeId || ""]);
     } else {
-      // First-time initialization: Add GeoJSON source and layers
       map.addSource("routes-source", {
         type: "geojson",
         data: geojsonData
       });
 
-      // Inactive / background routes
+      // Inactive routes
       map.addLayer({
         id: "route-layer-inactive",
         type: "line",
@@ -205,7 +257,7 @@ function MapView({
         }
       });
 
-      // Selected Route Glow Layer
+      // Glow layer
       map.addLayer({
         id: "route-layer-glow",
         type: "line",
@@ -219,7 +271,7 @@ function MapView({
         }
       });
 
-      // Selected Route Core Layer
+      // Active core line
       map.addLayer({
         id: "route-layer-active",
         type: "line",
@@ -232,7 +284,6 @@ function MapView({
         }
       });
 
-      // Register click handler on routes once
       map.on("click", "route-layer-inactive", (e) => {
         if (e.features && e.features[0]) {
           const clickedId = e.features[0].properties.id;
@@ -247,59 +298,45 @@ function MapView({
         map.getCanvas().style.cursor = "";
       });
     }
+  }
 
-    // Ensure Start and End markers are in place
-    renderOriginDestinationMarkers(map);
+  function updateOriginDestinationMarkers(map, corridor) {
+    if (!corridor) return;
+    const originCoords = corridor.origin?.coordinates || [77.2195, 28.6328];
+    const destCoords = corridor.destination?.coordinates || [77.2345, 28.6258];
 
-    // Smoothly focus on active corridor once loaded
-    if (!map._hasFitBounds && features.length > 0) {
-      map._hasFitBounds = true;
-      map.flyTo({
-        center: [77.2270, 28.6293],
-        zoom: 14.6,
-        pitch: 35,
-        bearing: -15,
-        duration: 900
-      });
+    if (map._originMarker) {
+      map._originMarker.setLngLat(originCoords);
+      map._originMarker.getElement().title = `Origin: ${corridor.origin?.name || "Origin"}`;
+    } else {
+      const elOrigin = document.createElement("div");
+      elOrigin.className = "marker-origin";
+      elOrigin.innerHTML = "A";
+      elOrigin.title = `Origin: ${corridor.origin?.name || "Origin"}`;
+      map._originMarker = new maplibregl.Marker({ element: elOrigin })
+        .setLngLat(originCoords)
+        .addTo(map);
+    }
+
+    if (map._destMarker) {
+      map._destMarker.setLngLat(destCoords);
+      map._destMarker.getElement().title = `Destination: ${corridor.destination?.name || "Destination"}`;
+    } else {
+      const elDest = document.createElement("div");
+      elDest.className = "marker-dest";
+      elDest.innerHTML = "B";
+      elDest.title = `Destination: ${corridor.destination?.name || "Destination"}`;
+      map._destMarker = new maplibregl.Marker({ element: elDest })
+        .setLngLat(destCoords)
+        .addTo(map);
     }
   }
 
-  function renderOriginDestinationMarkers(map) {
-    // Only render once
-    if (map._originMarker) return;
-
-    // Origin: Rajiv Chowk Metro Gate 2
-    const elOrigin = document.createElement("div");
-    elOrigin.className = "marker-origin";
-    elOrigin.innerHTML = "A";
-    elOrigin.title = "Origin: Rajiv Chowk Metro (Gate 2)";
-
-    const originMarker = new maplibregl.Marker({ element: elOrigin })
-      .setLngLat([77.2195, 28.6328])
-      .addTo(map);
-
-    // Destination: Mandi House Metro
-    const elDest = document.createElement("div");
-    elDest.className = "marker-dest";
-    elDest.innerHTML = "B";
-    elDest.title = "Destination: Mandi House Metro Interchange";
-
-    const destMarker = new maplibregl.Marker({ element: elDest })
-      .setLngLat([77.2345, 28.6258])
-      .addTo(map);
-
-    map._originMarker = originMarker;
-    map._destMarker = destMarker;
-  }
-
   function updatePoiMarkers(map, pois, isVisible) {
-    // If markers already created, efficiently toggle DOM display rather than recreating
+    // Clear old markers if POI list changed
     if (markersRef.current.length > 0) {
-      markersRef.current.forEach(m => {
-        const el = m.getElement();
-        if (el) el.style.display = isVisible ? "flex" : "none";
-      });
-      return;
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
     }
 
     if (!pois || pois.length === 0) return;
@@ -311,14 +348,36 @@ function MapView({
       el.title = poi.name;
       el.style.display = isVisible ? "flex" : "none";
 
-      const popup = new maplibregl.Popup({ offset: 15, closeButton: false }).setHTML(`
-        <div style="font-family: sans-serif; font-size: 12px; color: #111827; padding: 4px;">
-          <strong style="color: #0284C7;">${poi.name}</strong><br/>
+      const isCurrentPitstop = (activePitstopPoiId === poi.id);
+
+      const popup = new maplibregl.Popup({ offset: 15, closeButton: true }).setHTML(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #111827; padding: 4px; min-width: 170px;">
+          <strong style="color: #0284C7; font-size: 13px;">${poi.name}</strong><br/>
           <span style="color: #4B5563;">Type: ${poi.type.replace(/_/g, ' ')}</span><br/>
           <span style="color: #10B981; font-weight: 600;">● ${poi.verified_status}</span><br/>
-          <small style="color: #6B7280;">${poi.features.join(", ")}</small>
+          <small style="color: #6B7280;">${poi.features?.join(", ") || ""}</small>
+          <div style="margin-top: 8px;">
+            <button 
+              id="btn-pitstop-${poi.id}" 
+              style="width: 100%; padding: 5px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid ${isCurrentPitstop ? '#EF4444' : '#0284C7'}; background: ${isCurrentPitstop ? '#FEE2E2' : '#E0F2FE'}; color: ${isCurrentPitstop ? '#B91C1C' : '#0369A1'};"
+            >
+              ${isCurrentPitstop ? "✖ Remove Waypoint" : "+ Add Route Waypoint"}
+            </button>
+          </div>
         </div>
       `);
+
+      popup.on("open", () => {
+        setTimeout(() => {
+          const btn = document.getElementById(`btn-pitstop-${poi.id}`);
+          if (btn && onTogglePitstop) {
+            btn.onclick = () => {
+              onTogglePitstop(poi.id);
+              popup.remove();
+            };
+          }
+        }, 50);
+      });
 
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat(poi.coordinates)

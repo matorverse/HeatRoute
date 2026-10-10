@@ -20,7 +20,11 @@ FORBIDDEN_HIGHWAYS = {
 }
 
 
-def evaluate_segment_safety(segment: Dict[str, Any], is_nighttime: bool = False) -> Tuple[bool, str]:
+def evaluate_segment_safety(
+    segment: Dict[str, Any], 
+    is_nighttime: bool = False,
+    is_monsoon: bool = False
+) -> Tuple[bool, str]:
     """
     Evaluates individual segment safety constraints.
     Returns (is_safe, rejection_reason).
@@ -33,6 +37,13 @@ def evaluate_segment_safety(segment: Dict[str, Any], is_nighttime: bool = False)
     speed_limit_kmh = segment.get("speed_limit_kmh", 30)
     if not has_sidewalk and speed_limit_kmh > 40:
         return False, "High-speed vehicular roadway without segregated pedestrian sidewalk"
+
+    # Monsoon Track 02: Severe waterlogging and flash flood filter
+    if is_monsoon:
+        waterlog_risk = segment.get("waterlogging_risk", "NONE").upper()
+        if waterlog_risk in {"SEVERE_SUBMERGED", "HIGH_FLOOD_PRONE"}:
+            seg_name = segment.get("name", "Sunken Corridor")
+            return False, f"Severe Monsoon Inundation: {seg_name} is waterlogged with standing water depth > 1.2m"
 
     if segment.get("active_hazard", False):
         hazard_desc = segment.get("hazard_description", "Active hazard / construction barrier")
@@ -48,7 +59,8 @@ def evaluate_segment_safety(segment: Dict[str, Any], is_nighttime: bool = False)
 
 def filter_candidate_route_safety(
     route: Dict[str, Any],
-    is_nighttime: bool = False
+    is_nighttime: bool = False,
+    is_monsoon: bool = False
 ) -> Dict[str, Any]:
     """
     Evaluates entire route against pedestrian safety criteria.
@@ -58,7 +70,7 @@ def filter_candidate_route_safety(
     violations: List[str] = []
 
     for idx, seg in enumerate(segments):
-        is_safe, reason = evaluate_segment_safety(seg, is_nighttime=is_nighttime)
+        is_safe, reason = evaluate_segment_safety(seg, is_nighttime=is_nighttime, is_monsoon=is_monsoon)
         if not is_safe:
             violations.append(f"Segment {idx + 1} ({seg.get('name', 'Unnamed')}): {reason}")
 

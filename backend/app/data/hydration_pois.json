@@ -2,6 +2,7 @@
   "hydration_and_recovery_pois": [
     {
       "id": "poi-bangla-sahib-chhabil",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Gurudwara Bangla Sahib Cold Water Chhabil",
       "type": "FREE_COMMUNITY_WATER",
       "coordinates": [77.2091, 28.6261],
@@ -12,6 +13,7 @@
     },
     {
       "id": "poi-rajiv-chowk-gate2",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Rajiv Chowk Metro Gate 2 Water Kiosk",
       "type": "METRO_WATER_ATM",
       "coordinates": [77.2195, 28.6328],
@@ -22,6 +24,7 @@
     },
     {
       "id": "poi-djb-kg-marg",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Delhi Jal Board (DJB) Public Water Post",
       "type": "MUNICIPAL_WATER_POINT",
       "coordinates": [77.2235, 28.6280],
@@ -32,6 +35,7 @@
     },
     {
       "id": "poi-barakhamba-metro",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Barakhamba Road Metro Hydration Facility",
       "type": "METRO_WATER_ATM",
       "coordinates": [77.2260, 28.6295],
@@ -42,6 +46,7 @@
     },
     {
       "id": "poi-central-park-pavilion",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Central Park Shaded Cooling Pavilion",
       "type": "SHADED_REST_POINT",
       "coordinates": [77.2185, 28.6325],
@@ -52,6 +57,7 @@
     },
     {
       "id": "poi-mandi-house-gate2",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Mandi House Metro Drinking Water Facility",
       "type": "METRO_WATER_ATM",
       "coordinates": [77.2345, 28.6258],
@@ -62,6 +68,7 @@
     },
     {
       "id": "poi-tolstoy-cooler",
+      "corridor_id": "DELHI_CP_TO_MANDI_HOUSE",
       "name": "Tolstoy Marg Community Water Cooler (Pyaau)",
       "type": "COMMUNITY_PYAAU",
       "coordinates": [77.2285, 28.6254],
@@ -69,6 +76,72 @@
       "features": ["Earthen Pot (Matka) & Electric Chiller", "Tree Shade"],
       "accessibility": "Open daylight hours",
       "last_verified_hours_ago": 2.5
+    },
+    {
+      "id": "poi-hk-metro-gate3",
+      "corridor_id": "DELHI_HAUZ_KHAS_TO_IIT",
+      "name": "Hauz Khas Metro Gate 3 Water ATM",
+      "type": "METRO_WATER_ATM",
+      "coordinates": [77.2060, 28.5430],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Chilled RO Dispenser", "AC Subway Shelter"],
+      "accessibility": "06:00 - 23:00",
+      "last_verified_hours_ago": 0.8
+    },
+    {
+      "id": "poi-sda-market-pyaau",
+      "corridor_id": "DELHI_HAUZ_KHAS_TO_IIT",
+      "name": "SDA Commercial Market Public Cooler",
+      "type": "COMMUNITY_PYAAU",
+      "coordinates": [77.1990, 28.5445],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Deep Shaded Awnings", "Filtered Drinking Water", "Benches"],
+      "accessibility": "Open daylight hours",
+      "last_verified_hours_ago": 1.5
+    },
+    {
+      "id": "poi-iit-gate-kiosk",
+      "corridor_id": "DELHI_HAUZ_KHAS_TO_IIT",
+      "name": "IIT Delhi Main Gate Hydration Kiosk",
+      "type": "FREE_COMMUNITY_WATER",
+      "coordinates": [77.1930, 28.5452],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Cold RO Water", "Bus Shelter Cover", "Guard Station"],
+      "accessibility": "Open 24x7 to public",
+      "last_verified_hours_ago": 1.1
+    },
+    {
+      "id": "poi-sis-ganj-chhabil",
+      "corridor_id": "DELHI_CHANDNI_CHOWK",
+      "name": "Gurudwara Sis Ganj Sahib Chhabil",
+      "type": "FREE_COMMUNITY_WATER",
+      "coordinates": [77.2325, 28.6568],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Chilled Rose Sharbat & Water", "Marble Shade Hall", "Open to All"],
+      "accessibility": "Open 24x7 to public",
+      "last_verified_hours_ago": 0.3
+    },
+    {
+      "id": "poi-cc-metro-gate1",
+      "corridor_id": "DELHI_CHANDNI_CHOWK",
+      "name": "Chandni Chowk Metro Concourse Hydration Point",
+      "type": "METRO_WATER_ATM",
+      "coordinates": [77.2288, 28.6573],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["RO Water ATM", "Air-conditioned Subsurface Shelter"],
+      "accessibility": "06:00 - 23:00",
+      "last_verified_hours_ago": 1.2
+    },
+    {
+      "id": "poi-redfort-plaza-cooler",
+      "corridor_id": "DELHI_CHANDNI_CHOWK",
+      "name": "Red Fort Plaza Tourist Drinking Fountain",
+      "type": "MUNICIPAL_WATER_POINT",
+      "coordinates": [77.2405, 28.6562],
+      "verified_status": "VERIFIED_ACTIVE",
+      "features": ["Filtered Water Fountains", "Large Shaded Canopy", "Security"],
+      "accessibility": "08:00 - 21:00",
+      "last_verified_hours_ago": 2.0
     }
   ]
 }

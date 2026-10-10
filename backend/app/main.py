@@ -45,18 +45,28 @@ def root(response: Response):
 def get_corridors(response: Response):
     """Returns available microclimate testbed corridors with 10-minute caching."""
     response.headers["Cache-Control"] = "public, max-age=600"
-    corridor = load_corridor_data()
-    return {
-        "corridors": [
-            {
-                "id": corridor["corridor_id"],
-                "name": corridor["name"],
-                "city": corridor["city"],
-                "origin": corridor["origin"],
-                "destination": corridor["destination"]
-            }
-        ]
-    }
+    raw = load_corridor_data()
+    raw_all = raw.get("corridors", [])
+    if not raw_all:
+        raw_all = [{
+            "corridor_id": raw.get("corridor_id", "DELHI_CP_TO_MANDI_HOUSE"),
+            "name": raw.get("name", "Rajiv Chowk (Connaught Place) to Mandi House Metro Hub"),
+            "city": raw.get("city", "New Delhi"),
+            "origin": raw.get("origin", {}),
+            "destination": raw.get("destination", {})
+        }]
+    
+    corridors = []
+    for c in raw_all:
+        corridors.append({
+            "id": c["corridor_id"],
+            "name": c["name"],
+            "city": c.get("city", "New Delhi"),
+            "origin": c.get("origin", {}),
+            "destination": c.get("destination", {}),
+            "default_zoom": c.get("default_zoom", 14.5)
+        })
+    return {"corridors": corridors}
 
 
 @app.post("/api/v1/routes/evaluate", response_model=RouteResponse)
@@ -73,7 +83,10 @@ def evaluate_routes(request: RouteRequest):
         ambient_temp_c=request.ambient_temp_c or 42.0,
         humidity_pct=request.relative_humidity or 45.0,
         max_detour_percent=request.max_detour_percent or 25.0,
-        mode_preference=request.mode_preference or "BALANCED"
+        mode_preference=request.mode_preference or "BALANCED",
+        season=request.season or "SUMMER",
+        corridor_id=request.corridor_id or "DELHI_CP_TO_MANDI_HOUSE",
+        pitstop_poi_id=request.pitstop_poi_id
     )
     return result
 

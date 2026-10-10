@@ -1,22 +1,32 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   Flame, 
   Droplets, 
   MapPin, 
   Info, 
   Cloud, 
-  Sparkles,
-  Thermometer,
-  ShieldCheck
+  Sparkles, 
+  Thermometer, 
+  ShieldCheck,
+  Sun,
+  CloudRain,
+  ChevronDown,
+  X
 } from "lucide-react";
 
 import MapView from "./components/MapView";
 import RouteCard from "./components/RouteCard";
 import TimeSlider from "./components/TimeSlider";
 import AwsTelemetryModal from "./components/AwsTelemetryModal";
-import { fetchRouteEvaluation } from "./services/api";
+import { fetchRouteEvaluation, fetchCorridors } from "./services/api";
+import { FALLBACK_CORRIDORS } from "./data/fallbackData";
 
 export default function App() {
+  const [season, setSeason] = useState("SUMMER"); // "SUMMER" | "MONSOON"
+  const [corridors, setCorridors] = useState(FALLBACK_CORRIDORS);
+  const [selectedCorridorId, setSelectedCorridorId] = useState("DELHI_CP_TO_MANDI_HOUSE");
+  const [activePitstopPoiId, setActivePitstopPoiId] = useState(null);
+
   const [currentHour, setCurrentHour] = useState(13.5); // Default: 1:30 PM (Peak Delhi Heat)
   const [evaluationData, setEvaluationData] = useState(null);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
@@ -24,7 +34,20 @@ export default function App() {
   const [isAwsModalOpen, setIsAwsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Recalculate routes with smooth 100ms debounce during slider interaction
+  // Fetch available testbed corridors on mount
+  useEffect(() => {
+    fetchCorridors().then(list => {
+      if (list && list.length > 0) {
+        setCorridors(list);
+      }
+    });
+  }, []);
+
+  const activeCorridor = useMemo(() => {
+    return corridors.find(c => c.id === selectedCorridorId) || corridors[0];
+  }, [corridors, selectedCorridorId]);
+
+  // Recalculate routes on parameter change with 100ms debounce
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
@@ -33,21 +56,28 @@ export default function App() {
     const mins = Math.round((currentHour - hours) * 60);
     const hourStr = hours < 10 ? `0${hours}` : `${hours}`;
     const minStr = mins < 10 ? `0${mins}` : `${mins}`;
-    const isoString = `2026-06-15T${hourStr}:${minStr}:00+05:30`;
+    const dateStr = season === "MONSOON" ? "2026-07-28" : "2026-06-15";
+    const isoString = `${dateStr}T${hourStr}:${minStr}:00+05:30`;
+
+    const ambientTemp = season === "MONSOON" ? 32.5 : (currentHour >= 16 ? 40.0 : 43.5);
+    const humidity = season === "MONSOON" ? 85.0 : (currentHour >= 16 ? 45.0 : 42.0);
 
     const timer = setTimeout(() => {
       fetchRouteEvaluation({
         departureTime: isoString,
-        ambientTempC: currentHour >= 16 ? 40.0 : 43.5,
-        humidityPct: currentHour >= 16 ? 45.0 : 42.0,
-        modePreference: "BALANCED"
+        ambientTempC: ambientTemp,
+        humidityPct: humidity,
+        modePreference: "BALANCED",
+        season: season,
+        corridorId: selectedCorridorId,
+        pitstopPoiId: activePitstopPoiId
       }).then(data => {
         if (isMounted) {
           setEvaluationData(data);
           setIsLoading(false);
           // Preserve currently selected route if valid, otherwise fallback to recommended
           setSelectedRouteId(prev => {
-            if (prev && data.routes?.some(r => r.id === prev)) {
+            if (prev && data.routes?.some(r => r.id === prev && r.mode !== "REJECTED_UNSAFE")) {
               return prev;
             }
             const rec = data.routes?.find(r => r.is_recommended) || data.routes?.[0];
@@ -61,7 +91,7 @@ export default function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [currentHour]);
+  }, [currentHour, season, selectedCorridorId, activePitstopPoiId]);
 
   const handleSelectRoute = useCallback((id) => {
     setSelectedRouteId(id);
@@ -71,8 +101,20 @@ export default function App() {
     setCurrentHour(val);
   }, []);
 
+  const handleTogglePitstop = useCallback((poiId) => {
+    setActivePitstopPoiId(prev => (prev === poiId ? null : poiId));
+  }, []);
+
+  const handleCorridorChange = (e) => {
+    setSelectedCorridorId(e.target.value);
+    setActivePitstopPoiId(null); // Reset pitstop for new corridor
+  };
+
   const activeRoutes = evaluationData?.routes || [];
   const selectedRoute = activeRoutes.find(r => r.id === selectedRouteId) || activeRoutes[0];
+  const activePitstopPoi = activePitstopPoiId 
+    ? evaluationData?.hydration_pois?.find(p => p.id === activePitstopPoiId) 
+    : null;
 
   return (
     <div className="app-container">
@@ -87,27 +129,82 @@ export default function App() {
             <span className="track-badge">Track 02 · Heat & Water</span>
           </div>
           <p className="tagline">
-            Safety-constrained, thermal-aware pedestrian route optimization layer for Indian cities.
+            Climate-resilient pedestrian routing layer for extreme summer heatwaves and monsoon flash flooding.
           </p>
         </header>
 
-        {/* Microclimate Corridor Info */}
+        {/* Hazard & Corridor Controls */}
         <section className="control-section">
+          {/* Dual-Hazard Season Switcher */}
           <div className="section-label">
+            <span>Climate Hazard Scenario</span>
+          </div>
+          <div className="season-toggle-group">
+            <button
+              id="season-summer-btn"
+              className={`season-btn summer ${season === "SUMMER" ? "active" : ""}`}
+              onClick={() => setSeason("SUMMER")}
+            >
+              <Sun size={15} color={season === "SUMMER" ? "#FBBF24" : "currentColor"} />
+              <span>☀️ Peak Heatwave (43.5°C)</span>
+            </button>
+
+            <button
+              id="season-monsoon-btn"
+              className={`season-btn monsoon ${season === "MONSOON" ? "active" : ""}`}
+              onClick={() => setSeason("MONSOON")}
+            >
+              <CloudRain size={15} color={season === "MONSOON" ? "#38BDF8" : "currentColor"} />
+              <span>⛈️ Monsoon Flood</span>
+            </button>
+          </div>
+
+          {/* Microclimate Corridor Switcher */}
+          <div className="section-label" style={{ marginTop: "6px" }}>
             <MapPin size={13} />
-            <span>Active Corridor Testbed</span>
+            <span>Active Corridor Testbed ({corridors.length} Cities)</span>
+          </div>
+
+          <div className="corridor-select-wrapper">
+            <select
+              id="corridor-select"
+              className="corridor-select-input"
+              value={selectedCorridorId}
+              onChange={handleCorridorChange}
+            >
+              {corridors.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.city})
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="corridor-select-arrow" />
           </div>
 
           <div className="corridor-banner">
-            <div className="corridor-title">
-              <span>Connaught Place ➔ Mandi House</span>
-            </div>
             <div className="corridor-endpoints">
-              <span style={{ color: "#10B981" }}>● Origin: Rajiv Chowk Metro (Gate 2)</span>
+              <span style={{ color: "#10B981" }}>● Origin: {activeCorridor?.origin?.name || "Origin"}</span>
               <span>➔</span>
-              <span style={{ color: "#EF4444" }}>● Dest: Mandi House</span>
+              <span style={{ color: "#EF4444" }}>● Dest: {activeCorridor?.destination?.name || "Destination"}</span>
             </div>
           </div>
+
+          {/* Active Hydration Pitstop Banner if Set */}
+          {activePitstopPoi && (
+            <div className="pitstop-active-banner">
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Droplets size={14} color="#6EE7B7" />
+                <span>Waypoint: <strong>{activePitstopPoi.name}</strong> (+1.5m)</span>
+              </div>
+              <button 
+                className="pitstop-clear-btn"
+                onClick={() => setActivePitstopPoiId(null)}
+                title="Remove pitstop waypoint"
+              >
+                Clear
+              </button>
+            </div>
+          )}
 
           {/* Atmospheric Environmental Metrics */}
           <div className="metrics-strip">
@@ -124,9 +221,14 @@ export default function App() {
               </span>
             </div>
             <div className="metric-pill">
-              <span className="metric-pill-label">Heat Index</span>
-              <span className="metric-pill-value" style={{ color: "var(--color-accent)" }}>
-                {evaluationData?.heat_index_c || 59.8}°C
+              <span className="metric-pill-label">
+                {season === "MONSOON" ? "Inundation Index" : "Heat Index"}
+              </span>
+              <span 
+                className="metric-pill-value" 
+                style={{ color: season === "MONSOON" ? "#38BDF8" : "var(--color-accent)" }}
+              >
+                {season === "MONSOON" ? "ALERT" : `${evaluationData?.heat_index_c || 59.8}°C`}
               </span>
             </div>
           </div>
@@ -161,6 +263,9 @@ export default function App() {
               route={route}
               isSelected={route.id === selectedRouteId}
               onSelect={handleSelectRoute}
+              activeSeason={season}
+              corridorName={activeCorridor?.name}
+              onAddPitstop={handleTogglePitstop}
             />
           ))}
         </div>
@@ -173,7 +278,11 @@ export default function App() {
             onClick={() => setShowHydration(!showHydration)}
           >
             <Droplets size={16} />
-            <span>{showHydration ? "Hide Water & Rest Stops" : "Show Water & Rest Stops (7)"}</span>
+            <span>
+              {showHydration 
+                ? "Hide Water & Rest Stops" 
+                : `Show Water & Rest Stops (${evaluationData?.hydration_pois?.length || 0})`}
+            </span>
           </button>
 
           <button
@@ -197,6 +306,9 @@ export default function App() {
           showHydration={showHydration}
           solarAltitude={evaluationData?.solar_altitude_deg || 70}
           solarAzimuth={evaluationData?.solar_azimuth_deg || 280}
+          activeCorridor={activeCorridor}
+          activePitstopPoiId={activePitstopPoiId}
+          onTogglePitstop={handleTogglePitstop}
         />
       </main>
 

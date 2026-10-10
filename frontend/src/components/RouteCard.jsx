@@ -1,13 +1,37 @@
-import React from "react";
-import { Clock, Shield, AlertTriangle, Trees, Compass } from "lucide-react";
+import React, { useState } from "react";
+import { 
+  Clock, 
+  Shield, 
+  AlertTriangle, 
+  Trees, 
+  Compass, 
+  ChevronDown, 
+  ChevronUp, 
+  Share2, 
+  Check, 
+  Droplets,
+  CloudRain,
+  Sun
+} from "lucide-react";
 
-function RouteCard({ route, isSelected, onSelect }) {
+function RouteCard({ 
+  route, 
+  isSelected, 
+  onSelect, 
+  activeSeason = "SUMMER",
+  corridorName = "",
+  onAddPitstop
+}) {
+  const [showSteps, setShowSteps] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const isRejected = route.mode === "REJECTED_UNSAFE";
 
   const modeBadgeClass = {
     FASTEST: "mode-fastest",
     BALANCED: "mode-balanced",
     COOLEST: "mode-coolest",
+    SAFEST_DRY: "mode-safest-dry",
     REJECTED_UNSAFE: "mode-rejected"
   }[route.mode] || "mode-balanced";
 
@@ -15,6 +39,28 @@ function RouteCard({ route, isSelected, onSelect }) {
     if (!isRejected && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       onSelect(route.id);
+    }
+  };
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    const text = [
+      `🚶‍♂️ HeatRoute Climate Advisory`,
+      `📍 Route: ${route.name}`,
+      `🏙️ Corridor: ${corridorName || "Delhi Microclimate Testbed"}`,
+      `🌡️ Mode: ${route.mode.replace("_", " ")} (${route.exposure_reduction_pct > 0 ? `-${route.exposure_reduction_pct}% Thermal Load` : "Baseline"})`,
+      `⏱️ Duration: ${route.total_duration_min} mins | Distance: ${(route.total_length_m / 1000).toFixed(2)} km`,
+      `🌳 Shade Level: ${route.avg_shade_percentage}% canopy / structure`,
+      `💧 Flood / Waterlogging Risk: ${route.waterlogging_risk || "NONE"}`,
+      `🛡️ Pedestrian Safety: ${route.safety?.safety_verdict || "VERIFIED"}`,
+      `Built for WeMakeDevs Bharat Builds Tour (Track 02: Heat & Water)`
+    ].join("\n");
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+      });
     }
   };
 
@@ -30,9 +76,24 @@ function RouteCard({ route, isSelected, onSelect }) {
       aria-pressed={isSelected}
     >
       <div className="route-card-header">
-        <span className={`route-mode-pill ${modeBadgeClass}`}>
-          {route.mode.replace("_", " ")}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+          <span className={`route-mode-pill ${modeBadgeClass}`}>
+            {route.mode === "SAFEST_DRY" ? "⛈️ SAFEST DRY" : route.mode.replace("_", " ")}
+          </span>
+
+          {route.waterlogging_risk && route.waterlogging_risk !== "NONE" && (
+            <span 
+              className="waterlog-pill" 
+              style={{
+                color: route.waterlogging_risk === "SEVERE_SUBMERGED" ? "#EF4444" : "#F59E0B",
+                backgroundColor: route.waterlogging_risk === "SEVERE_SUBMERGED" ? "rgba(239, 68, 68, 0.15)" : "rgba(245, 158, 11, 0.15)"
+              }}
+            >
+              <CloudRain size={11} />
+              {route.waterlogging_risk === "SEVERE_SUBMERGED" ? "FLOOD RISK" : "PUDDLE PRONE"}
+            </span>
+          )}
+        </div>
 
         {!isRejected && (
           <span
@@ -88,6 +149,59 @@ function RouteCard({ route, isSelected, onSelect }) {
                   <span>{factor}</span>
                 </div>
               ))}
+
+              {/* Turn-by-Turn Expand Button & Share Actions */}
+              <div className="route-actions-bar">
+                {route.steps && route.steps.length > 0 && (
+                  <button
+                    className="action-link-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSteps(!showSteps);
+                    }}
+                  >
+                    <span>{showSteps ? "Hide Itinerary" : `Turn-by-Turn Steps (${route.steps.length})`}</span>
+                    {showSteps ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                )}
+
+                <button
+                  className="share-pill-btn"
+                  onClick={handleShare}
+                  title="Copy formatted route advisory for mobile/WhatsApp"
+                >
+                  {copied ? <Check size={13} color="#10B981" /> : <Share2 size={13} />}
+                  <span>{copied ? "Copied!" : "Share Advisory"}</span>
+                </button>
+              </div>
+
+              {/* Expandable Turn-by-Turn Itinerary Drawer */}
+              {showSteps && route.steps && (
+                <div className="steps-itinerary-box">
+                  <div className="itinerary-header">
+                    <span>🚶 Turn-by-Turn Guidance</span>
+                  </div>
+                  {route.steps.map((st, i) => (
+                    <div key={i} className="step-itinerary-item">
+                      <div className="step-num-badge">{st.step_num}</div>
+                      <div className="step-content">
+                        <div className="step-instruction">{st.instruction}</div>
+                        <div className="step-meta">
+                          <span className="step-distance">{st.distance_m}m</span>
+                          <span className="step-shade">🍃 {st.shade_info}</span>
+                        </div>
+                        {st.water_nearby && (
+                          <div className="step-water-callout">
+                            <Droplets size={12} color="#38BDF8" />
+                            <span>{st.water_nearby}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ marginTop: "4px", fontSize: "0.7rem", color: "var(--text-muted)" }}>
                 Confidence: <strong style={{ color: "#10B981" }}>{route.confidence}</strong> (Geospatial & Canopy Data)
               </div>
