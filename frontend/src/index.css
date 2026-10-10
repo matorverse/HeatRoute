@@ -217,6 +217,143 @@ html, body {
 }
 
 /* ==========================================================================
+   EDGE-TO-EDGE SPATIAL MAP CANVAS
+   ========================================================================== */
+.spatial-map-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  overflow: hidden;
+  background: #090D14;
+}
+
+.map-view-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#maplibre-canvas {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+.maplibregl-canvas-container,
+.maplibregl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Hide duplicate floating badges from inside MapView since they are in HUD */
+.map-floating-badge {
+  display: none;
+}
+
+/* Custom MapLibre Markers */
+.marker-origin {
+  background: #10B981;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 2px solid white;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.85);
+  font-family: var(--font-mono);
+}
+
+.marker-dest {
+  background: #EF4444;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  border: 2px solid white;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.85);
+  font-family: var(--font-mono);
+}
+
+.marker-water {
+  background: #0284C7;
+  color: #BAE6FD;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.marker-water:hover {
+  transform: scale(1.25);
+}
+
+.marker-pitstop-active {
+  background: #059669;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #6EE7B7;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.9);
+  cursor: pointer;
+  animation: pulse-pin 1.8s infinite;
+  z-index: 10;
+}
+
+@keyframes pulse-pin {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* MapLibre Popup Overrides */
+.maplibregl-popup-content {
+  background: rgba(15, 23, 42, 0.94) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+  color: #F8FAFC !important;
+  padding: 14px !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(15, 23, 42, 0.94) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: #94A3B8 !important;
+  font-size: 16px !important;
+  padding: 4px 8px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #FFFFFF !important;
+  background: transparent !important;
+}
+
+/* ==========================================================================
    TOP FLOATING GLASS HUD NAVIGATION BAR
    ========================================================================== */
 .hud-topbar {
