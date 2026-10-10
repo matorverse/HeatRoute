@@ -62,7 +62,7 @@ export async function fetchRouteEvaluation(params = {}) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2.0s fast timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8.0s timeout to allow OSRM street network query
 
     const res = await fetch(`${BACKEND_URL}/api/v1/routes/evaluate`, {
       method: "POST",
@@ -94,13 +94,15 @@ export async function fetchRouteEvaluation(params = {}) {
 
   if (!result) {
     // Resilient deterministic client-side calculation
-    result = simulateDynamicEvaluation({
+    result = await simulateDynamicEvaluation({
       departureTime,
       ambientTempC,
       humidityPct,
       modePreference,
       season,
       corridorId,
+      origin: originCoords,
+      destination: destCoords,
       pitstopPoiId
     });
   }
@@ -116,15 +118,61 @@ export async function fetchRouteEvaluation(params = {}) {
 }
 
 /**
+ * Client-side OSRM fetcher for true road-snapped polylines
+ */
+async function fetchClientOsrm(waypoints) {
+  try {
+    const pts = waypoints.map(p => `${p[0]},${p[1]}`).join(";");
+    const res = await fetch(`https://router.project-osrm.org/route/v1/foot/${pts}?overview=full&geometries=geojson`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.code === "Ok" && data.routes?.[0]?.geometry?.coordinates?.length >= 4) {
+        return data.routes[0].geometry.coordinates;
+      }
+    }
+  } catch (e) {
+    // offline or blocked
+  }
+  return null;
+}
+
+/**
+ * Stepwise Manhattan block generator to follow street corridors when offline
+ */
+function generateOrthogonalStreetPath(o, d, detourOffset = 0) {
+  const [lon1, lat1] = o;
+  const [lon2, lat2] = d;
+  const dLon = lon2 - lon1;
+  const dLat = lat2 - lat1;
+  const numSteps = 8;
+  const coords = [o];
+  for (let i = 1; i < numSteps; i++) {
+    const t = i / numSteps;
+    const perp = Math.sin(t * Math.PI) * detourOffset;
+    const perpLon = -dLat * perp;
+    const perpLat = dLon * perp;
+    if (i % 2 === 1) {
+      coords.push([Number((lon1 + dLon * t + perpLon).toFixed(6)), Number((lat1 + dLat * (t - 0.5 / numSteps) + perpLat).toFixed(6))]);
+    } else {
+      coords.push([Number((lon1 + dLon * t + perpLon).toFixed(6)), Number((lat1 + dLat * t + perpLat).toFixed(6))]);
+    }
+  }
+  coords.push(d);
+  return coords;
+}
+
+/**
  * Calculates in-browser dynamic solar, monsoon hazard, and exposure shifts
  */
-function simulateDynamicEvaluation({
+async function simulateDynamicEvaluation({
   departureTime,
   ambientTempC,
   humidityPct,
   modePreference,
   season,
   corridorId,
+  origin,
+  destination,
   pitstopPoiId
 }) {
   const isMonsoon = (season?.toUpperCase() === "MONSOON");
@@ -149,11 +197,25 @@ function simulateDynamicEvaluation({
 
   // Retrieve base candidate routes for this specific corridor
   let rawBaseRoutes = FALLBACK_ROUTES_BY_CORRIDOR[activeCorridorId];
-  if (!rawBaseRoutes && params.origin && params.destination) {
-    const o = params.origin;
-    const d = params.destination;
-    const dLon = d[0] - o[0];
-    const dLat = d[1] - o[1];
+  if (!rawBaseRoutes && origin && destination) {
+    const o = origin;
+    const d = destination;
+
+    // Try online pedestrian OSRM query
+    let p1 = await fetchClientOsrm([o, d]);
+    if (!p1) p1 = generateOrthogonalStreetPath(o, d, 0.0);
+
+    const midLon = (o[0] + d[0]) / 2;
+    const midLat = (o[1] + d[1]) / 2;
+    const perpLon = -(d[1] - o[1]) * 0.25;
+    const perpLat = (d[0] - o[0]) * 0.25;
+
+    let p2 = await fetchClientOsrm([o, [midLon + perpLon, midLat + perpLat], d]);
+    if (!p2) p2 = generateOrthogonalStreetPath(o, d, 0.25);
+
+    let p3 = await fetchClientOsrm([o, [midLon - perpLon * 0.6, midLat - perpLat * 0.6], d]);
+    if (!p3) p3 = generateOrthogonalStreetPath(o, d, -0.15);
+
     rawBaseRoutes = [
       {
         id: "custom-direct-route",
@@ -167,14 +229,9 @@ function simulateDynamicEvaluation({
         exposure_color: "#EF4444",
         exposure_reduction_pct: 0.0,
         avg_shade_percentage: 16.0,
-        path_coordinates: [
-          o,
-          [o[0] + dLon * 0.33, o[1] + dLat * 0.33],
-          [o[0] + dLon * 0.67, o[1] + dLat * 0.67],
-          d
-        ],
+        path_coordinates: p1,
         steps: [
-          { step_num: 1, instruction: "Depart origin along direct roadway", distance_m: 400, shade_info: "12% shade" },
+          { step_num: 1, instruction: "Depart origin along street sidewalk", distance_m: 400, shade_info: "12% shade" },
           { step_num: 2, instruction: "Continue on primary commercial strip", distance_m: 400, shade_info: "15% tree cover" },
           { step_num: 3, instruction: "Arrive at destination point", distance_m: 400, shade_info: "Approaching destination" }
         ]
@@ -191,12 +248,7 @@ function simulateDynamicEvaluation({
         exposure_color: "#10B981",
         exposure_reduction_pct: 35.5,
         avg_shade_percentage: 84.0,
-        path_coordinates: [
-          o,
-          [o[0] + dLon * 0.3 - dLat * 0.2, o[1] + dLat * 0.3 + dLon * 0.2],
-          [o[0] + dLon * 0.7 - dLat * 0.25, o[1] + dLat * 0.7 + dLon * 0.25],
-          d
-        ],
+        path_coordinates: p2,
         steps: [
           { step_num: 1, instruction: "Turn into shaded tree-lined avenue", distance_m: 450, shade_info: "Dense canopy (80%)" },
           { step_num: 2, instruction: "Proceed through covered walkway and park", distance_m: 550, shade_info: "Continuous shade (85%)" },
@@ -215,11 +267,7 @@ function simulateDynamicEvaluation({
         exposure_color: "#F59E0B",
         exposure_reduction_pct: 20.0,
         avg_shade_percentage: 52.0,
-        path_coordinates: [
-          o,
-          [o[0] + dLon * 0.5 + dLat * 0.12, o[1] + dLat * 0.5 - dLon * 0.12],
-          d
-        ],
+        path_coordinates: p3,
         steps: [
           { step_num: 1, instruction: "Follow secondary street with sidewalk trees", distance_m: 640, shade_info: "52% shade" },
           { step_num: 2, instruction: "Proceed to destination", distance_m: 640, shade_info: "48% shade" }

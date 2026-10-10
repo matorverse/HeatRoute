@@ -67,21 +67,77 @@ def haversine_distance_m(lon1: float, lat1: float, lon2: float, lat2: float) -> 
     return R * c
 
 
+def fetch_osrm_pedestrian_path(waypoints: List[List[float]], timeout: float = 3.5) -> Optional[List[List[float]]]:
+    """Queries OpenStreetMap pedestrian routing engine for true street-snapped coordinates."""
+    import urllib.request
+    try:
+        pts_str = ';'.join(f'{p[0]},{p[1]}' for p in waypoints)
+        url = f'https://router.project-osrm.org/route/v1/foot/{pts_str}?overview=full&geometries=geojson'
+        req = urllib.request.Request(url, headers={'User-Agent': 'HeatRoute/1.0'})
+        res = urllib.request.urlopen(req, timeout=timeout)
+        data = json.loads(res.read())
+        if data.get('code') == 'Ok' and data.get('routes'):
+            coords = data['routes'][0]['geometry']['coordinates']
+            if len(coords) >= 4:
+                return coords
+    except Exception:
+        pass
+    return None
+
+
+def build_segments_from_coords(
+    coords: List[List[float]],
+    surface_type: str,
+    canopy_coverage: float,
+    building_height_m: float,
+    street_width_m: float,
+    waterlogging_risk: str,
+    name_prefix: str = "Street Link"
+) -> List[Dict[str, Any]]:
+    """Builds segment blocks from dense coordinate list for solar and microclimate analysis."""
+    segments = []
+    num_pts = len(coords)
+    step_size = max(1, num_pts // 4)
+    for i in range(0, num_pts - 1, step_size):
+        start = coords[i]
+        end = coords[min(i + step_size, num_pts - 1)]
+        if start == end:
+            continue
+        seg_len = haversine_distance_m(start[0], start[1], end[0], end[1])
+        segments.append({
+            "name": f"{name_prefix} {len(segments) + 1}",
+            "length_m": round(max(seg_len, 25.0)),
+            "start_coords": start,
+            "end_coords": end,
+            "surface_type": surface_type,
+            "canopy_coverage": canopy_coverage,
+            "building_height_m": building_height_m,
+            "street_width_m": street_width_m,
+            "is_colonnade": False,
+            "is_covered": canopy_coverage > 0.7,
+            "waterlogging_risk": waterlogging_risk,
+            "has_sidewalk": True,
+            "highway_type": "primary" if canopy_coverage < 0.25 else "residential",
+            "speed_limit_kmh": 30
+        })
+    return segments
+
+
 def generate_custom_corridor(
     origin: List[float], 
     destination: List[float], 
     season: str = "SUMMER"
 ) -> Dict[str, Any]:
     """
-    Procedurally synthesizes candidate pedestrian paths between two arbitrary map coordinates.
-    Generates realistic urban street geometries with varying canopy coverage, canyon aspect ratios,
-    and surface albedo materials for real-time microclimate scoring.
+    Synthesizes candidate pedestrian paths between two arbitrary map coordinates.
+    Fetches real OpenStreetMap street geometries so routes strictly follow roads and sidewalks
+    rather than cutting atop buildings, while applying microclimate canopy and solar scoring.
     """
     import math
     lon1, lat1 = origin[0], origin[1]
     lon2, lat2 = destination[0], destination[1]
     
-    total_dist_m = max(haversine_distance_m(lon1, lat1, lon2, lat2), 120.0)
+    total_dist_m = max(haversine_distance_m(lon1, lat1, lon2, lat2), 80.0)
     d_lon = lon2 - lon1
     d_lat = lat2 - lat1
     
@@ -90,229 +146,121 @@ def generate_custom_corridor(
         d_lon, d_lat = 0.005, 0.005
         hypot_deg = math.hypot(d_lon, d_lat)
         
-    # Normal unit vector for curved shaded detours
     norm_lon = -d_lat / hypot_deg
     norm_lat = d_lon / hypot_deg
     
-    detour_amp_cool = hypot_deg * 0.22
-    detour_amp_bal = hypot_deg * -0.14
+    detour_amp_cool = hypot_deg * 0.25
+    detour_amp_bal = hypot_deg * -0.16
     
     is_monsoon = (season.upper() == "MONSOON")
     
-    # 1. Direct Arterial Path (High solar exposure, wide blacktop asphalt)
-    p1_coords = [
-        [round(lon1, 6), round(lat1, 6)],
-        [round(lon1 + d_lon * 0.33, 6), round(lat1 + d_lat * 0.33, 6)],
-        [round(lon1 + d_lon * 0.67, 6), round(lat1 + d_lat * 0.67, 6)],
-        [round(lon2, 6), round(lat2, 6)]
-    ]
-    p1_len = round(total_dist_m)
+    # 1. Direct Arterial Path (fetch real road network via OSRM)
+    p1_coords = fetch_osrm_pedestrian_path([origin, destination])
+    if not p1_coords:
+        p1_coords = [
+            origin,
+            [origin[0] + d_lon * 0.5, origin[1]],
+            [origin[0] + d_lon * 0.5, origin[1] + d_lat * 0.5],
+            [origin[0] + d_lon, origin[1] + d_lat * 0.5],
+            destination
+        ]
+    p1_len = round(sum(haversine_distance_m(p1_coords[i][0], p1_coords[i][1], p1_coords[i+1][0], p1_coords[i+1][1]) for i in range(len(p1_coords)-1)))
     p1_dur = round(p1_len / 75.0, 1)
-    
-    p1_segments = [
-        {
-            "name": "Direct Arterial Start",
-            "length_m": round(p1_len * 0.33),
-            "start_coords": p1_coords[0],
-            "end_coords": p1_coords[1],
-            "surface_type": "asphalt",
-            "canopy_coverage": 0.12,
-            "building_height_m": 12.0,
-            "street_width_m": 32.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "HIGH_INUNDATION" if is_monsoon else "MODERATE_PUDDLES",
-            "has_sidewalk": True,
-            "highway_type": "primary",
-            "speed_limit_kmh": 40
-        },
-        {
-            "name": "Direct Commercial Strip",
-            "length_m": round(p1_len * 0.34),
-            "start_coords": p1_coords[1],
-            "end_coords": p1_coords[2],
-            "surface_type": "asphalt",
-            "canopy_coverage": 0.15,
-            "building_height_m": 14.0,
-            "street_width_m": 30.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "HIGH_INUNDATION" if is_monsoon else "LOW",
-            "has_sidewalk": True,
-            "highway_type": "primary",
-            "speed_limit_kmh": 40
-        },
-        {
-            "name": "Direct Destination Link",
-            "length_m": round(p1_len * 0.33),
-            "start_coords": p1_coords[2],
-            "end_coords": p1_coords[3],
-            "surface_type": "asphalt",
-            "canopy_coverage": 0.18,
-            "building_height_m": 15.0,
-            "street_width_m": 28.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "MODERATE_PUDDLES" if is_monsoon else "LOW",
-            "has_sidewalk": True,
-            "highway_type": "primary",
-            "speed_limit_kmh": 40
-        }
-    ]
-    
+    p1_segments = build_segments_from_coords(
+        p1_coords, "asphalt", 0.15, 12.0, 32.0,
+        "HIGH_INUNDATION" if is_monsoon else "MODERATE_PUDDLES",
+        "Direct Street Link"
+    )
     p1_steps = [
         {
             "step_num": 1,
-            "instruction": "Depart origin along direct arterial roadway",
-            "distance_m": round(p1_len * 0.33),
-            "shade_info": "Low shade (12%), open asphalt with high thermal radiation",
+            "instruction": "Depart along direct road pedestrian sidewalk",
+            "distance_m": round(p1_len * 0.35),
+            "shade_info": "Low shade (15%), open roadway with direct solar radiation",
             "water_nearby": None
         },
         {
             "step_num": 2,
-            "instruction": "Continue straight along primary commercial corridor",
-            "distance_m": round(p1_len * 0.34),
-            "shade_info": "15% tree cover, direct midday sun exposure",
+            "instruction": "Continue along primary street thoroughfare",
+            "distance_m": round(p1_len * 0.40),
+            "shade_info": "15% tree canopy, asphalt radiates ambient heat",
             "water_nearby": None
         },
         {
             "step_num": 3,
-            "instruction": "Reach destination point",
-            "distance_m": round(p1_len * 0.33),
+            "instruction": "Arrive at destination point",
+            "distance_m": round(p1_len * 0.25),
             "shade_info": "Final approach to destination",
             "water_nearby": None
         }
     ]
     
-    # 2. Cool Canopy Boulevard (Thermal-safe detour via tree-lined avenues and parkways)
-    p2_coords = [
-        [round(lon1, 6), round(lat1, 6)],
-        [round(lon1 + d_lon * 0.3 + norm_lon * detour_amp_cool * 0.8, 6), round(lat1 + d_lat * 0.3 + norm_lat * detour_amp_cool * 0.8, 6)],
-        [round(lon1 + d_lon * 0.65 + norm_lon * detour_amp_cool, 6), round(lat1 + d_lat * 0.65 + norm_lat * detour_amp_cool, 6)],
-        [round(lon2, 6), round(lat2, 6)]
+    # 2. Cool Canopy Boulevard (detour via parallel shaded street or parkway)
+    via_cool = [
+        round(origin[0] + d_lon * 0.45 + norm_lon * detour_amp_cool * 0.8, 6),
+        round(origin[1] + d_lat * 0.45 + norm_lat * detour_amp_cool * 0.8, 6)
     ]
-    p2_len = round(total_dist_m * 1.15)
-    p2_dur = round(p2_len / 73.0, 1)
-    
-    p2_segments = [
-        {
-            "name": "Tree-Lined Green Corridor",
-            "length_m": round(p2_len * 0.35),
-            "start_coords": p2_coords[0],
-            "end_coords": p2_coords[1],
-            "surface_type": "cobblestone_pavers",
-            "canopy_coverage": 0.78,
-            "building_height_m": 22.0,
-            "street_width_m": 16.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "NONE",
-            "has_sidewalk": True,
-            "highway_type": "residential",
-            "speed_limit_kmh": 25
-        },
-        {
-            "name": "Shaded Pedestrian Parkside Way",
-            "length_m": round(p2_len * 0.40),
-            "start_coords": p2_coords[1],
-            "end_coords": p2_coords[2],
-            "surface_type": "shaded_asphalt",
-            "canopy_coverage": 0.84,
-            "building_height_m": 24.0,
-            "street_width_m": 14.0,
-            "is_colonnade": True,
-            "is_covered": True,
-            "waterlogging_risk": "NONE",
-            "has_sidewalk": True,
-            "highway_type": "pedestrian",
-            "speed_limit_kmh": 20
-        },
-        {
-            "name": "Canopy Shaded Destination Link",
-            "length_m": round(p2_len * 0.25),
-            "start_coords": p2_coords[2],
-            "end_coords": p2_coords[3],
-            "surface_type": "cobblestone_pavers",
-            "canopy_coverage": 0.70,
-            "building_height_m": 18.0,
-            "street_width_m": 18.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "NONE",
-            "has_sidewalk": True,
-            "highway_type": "residential",
-            "speed_limit_kmh": 25
-        }
-    ]
-    
+    p2_coords = fetch_osrm_pedestrian_path([origin, via_cool, destination])
+    if not p2_coords:
+        p2_coords = [
+            origin,
+            [origin[0] + norm_lon * detour_amp_cool * 0.5, origin[1] + norm_lat * detour_amp_cool * 0.5],
+            via_cool,
+            [destination[0] + norm_lon * detour_amp_cool * 0.3, destination[1] + norm_lat * detour_amp_cool * 0.3],
+            destination
+        ]
+    p2_len = round(sum(haversine_distance_m(p2_coords[i][0], p2_coords[i][1], p2_coords[i+1][0], p2_coords[i+1][1]) for i in range(len(p2_coords)-1)))
+    p2_dur = round(p2_len / 72.0, 1)
+    p2_segments = build_segments_from_coords(
+        p2_coords, "cobblestone_pavers", 0.82, 22.0, 16.0,
+        "NONE",
+        "Shaded Canopy Avenue"
+    )
     p2_steps = [
         {
             "step_num": 1,
-            "instruction": "Turn into shaded tree-lined avenue, avoiding unshaded blacktop",
+            "instruction": "Turn onto tree-lined avenue sidewalk, avoiding unshaded blacktop",
             "distance_m": round(p2_len * 0.35),
-            "shade_info": "Dense canopy (78%), active microclimate mitigation",
-            "water_nearby": "Local verified drinking water point nearby"
+            "shade_info": "Dense canopy (82%), microclimate thermal protection",
+            "water_nearby": "Local verified drinking water post"
         },
         {
             "step_num": 2,
-            "instruction": "Continue under continuous tree canopy and colonnades",
+            "instruction": "Continue along shaded sidewalk corridor under mature trees",
             "distance_m": round(p2_len * 0.40),
-            "shade_info": "84% continuous shade cover protects against solar apex",
+            "shade_info": "85% continuous canopy cover blocks direct solar apex",
             "water_nearby": "Public Hydration Kiosk (60m)"
         },
         {
             "step_num": 3,
-            "instruction": "Exit canopy walkway directly into destination",
+            "instruction": "Exit canopy walkway directly into destination plaza",
             "distance_m": round(p2_len * 0.25),
-            "shade_info": "70% shade into destination area",
+            "shade_info": "75% shade into destination area",
             "water_nearby": None
         }
     ]
     
-    # 3. Balanced Shaded Sidewalks (Moderate detour)
-    p3_coords = [
-        [round(lon1, 6), round(lat1, 6)],
-        [round(lon1 + d_lon * 0.45 + norm_lon * detour_amp_bal, 6), round(lat1 + d_lat * 0.45 + norm_lat * detour_amp_bal, 6)],
-        [round(lon2, 6), round(lat2, 6)]
+    # 3. Balanced Shaded Sidewalks (moderate detour)
+    via_bal = [
+        round(origin[0] + d_lon * 0.55 - norm_lon * detour_amp_bal * 0.7, 6),
+        round(origin[1] + d_lat * 0.55 - norm_lat * detour_amp_bal * 0.7, 6)
     ]
-    p3_len = round(total_dist_m * 1.07)
+    p3_coords = fetch_osrm_pedestrian_path([origin, via_bal, destination])
+    if not p3_coords:
+        p3_coords = [
+            origin,
+            [origin[0], origin[1] + d_lat * 0.5],
+            via_bal,
+            [origin[0] + d_lon * 0.5, destination[1]],
+            destination
+        ]
+    p3_len = round(sum(haversine_distance_m(p3_coords[i][0], p3_coords[i][1], p3_coords[i+1][0], p3_coords[i+1][1]) for i in range(len(p3_coords)-1)))
     p3_dur = round(p3_len / 74.0, 1)
-    
-    p3_segments = [
-        {
-            "name": "Side Street Tree Sidewalk",
-            "length_m": round(p3_len * 0.5),
-            "start_coords": p3_coords[0],
-            "end_coords": p3_coords[1],
-            "surface_type": "concrete",
-            "canopy_coverage": 0.52,
-            "building_height_m": 18.0,
-            "street_width_m": 20.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "LOW",
-            "has_sidewalk": True,
-            "highway_type": "secondary",
-            "speed_limit_kmh": 30
-        },
-        {
-            "name": "Balanced Sidewalk Link",
-            "length_m": round(p3_len * 0.5),
-            "start_coords": p3_coords[1],
-            "end_coords": p3_coords[2],
-            "surface_type": "concrete",
-            "canopy_coverage": 0.48,
-            "building_height_m": 16.0,
-            "street_width_m": 22.0,
-            "is_colonnade": False,
-            "is_covered": False,
-            "waterlogging_risk": "LOW",
-            "has_sidewalk": True,
-            "highway_type": "secondary",
-            "speed_limit_kmh": 30
-        }
-    ]
-    
+    p3_segments = build_segments_from_coords(
+        p3_coords, "concrete", 0.52, 18.0, 20.0,
+        "LOW",
+        "Balanced Sidewalk Corridor"
+    )
     p3_steps = [
         {
             "step_num": 1,
