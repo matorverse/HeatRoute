@@ -57,7 +57,10 @@ function MapView({
   solarAzimuth = 280,
   activeCorridor,
   activePitstopPoiId,
-  onTogglePitstop
+  onTogglePitstop,
+  isCustomMode = false,
+  customPoints = { origin: null, destination: null },
+  onMapClickPoint
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -155,11 +158,27 @@ function MapView({
     }
   }, [hydrationPois, showHydration, activePitstopPoiId]);
 
-  // Handle Corridor Switching (FlyTo + Origin/Destination Pin Relocation)
+  // Handle Corridor Switching or Custom Point Placement (FlyTo / FitBounds)
   useEffect(() => {
-    if (!mapRef.current || !activeCorridor) return;
+    if (!mapRef.current) return;
     
-    updateOriginDestinationMarkers(mapRef.current, activeCorridor);
+    updateOriginDestinationMarkers(mapRef.current, activeCorridor, isCustomMode, customPoints);
+
+    if (isCustomMode) {
+      if (customPoints && customPoints.origin && customPoints.destination) {
+        const minLon = Math.min(customPoints.origin[0], customPoints.destination[0]);
+        const maxLon = Math.max(customPoints.origin[0], customPoints.destination[0]);
+        const minLat = Math.min(customPoints.origin[1], customPoints.destination[1]);
+        const maxLat = Math.max(customPoints.origin[1], customPoints.destination[1]);
+        mapRef.current.fitBounds(
+          [[minLon, minLat], [maxLon, maxLat]],
+          { padding: { top: 140, bottom: 140, left: 460, right: 140 }, duration: 900 }
+        );
+      }
+      return;
+    }
+
+    if (!activeCorridor) return;
 
     if (currentCorridorIdRef.current !== activeCorridor.id) {
       currentCorridorIdRef.current = activeCorridor.id;
@@ -176,7 +195,30 @@ function MapView({
         duration: 1000
       });
     }
-  }, [activeCorridor]);
+  }, [activeCorridor, isCustomMode, customPoints]);
+
+  // Interactive click handler on Map canvas for Point-to-Point routing
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    const handleCanvasClick = (e) => {
+      if (isCustomMode && onMapClickPoint) {
+        onMapClickPoint([e.lngLat.lng, e.lngLat.lat]);
+      }
+    };
+
+    if (isCustomMode) {
+      map.getCanvas().style.cursor = "crosshair";
+    } else {
+      map.getCanvas().style.cursor = "";
+    }
+
+    map.on("click", handleCanvasClick);
+    return () => {
+      map.off("click", handleCanvasClick);
+    };
+  }, [isCustomMode, onMapClickPoint]);
 
   // Handle Pitstop POI Marker Highlighting
   useEffect(() => {
@@ -300,7 +342,44 @@ function MapView({
     }
   }
 
-  function updateOriginDestinationMarkers(map, corridor) {
+  function updateOriginDestinationMarkers(map, corridor, customMode = false, pts = { origin: null, destination: null }) {
+    if (customMode) {
+      if (pts && pts.origin) {
+        if (map._originMarker) {
+          map._originMarker.setLngLat(pts.origin);
+        } else {
+          const elOrigin = document.createElement("div");
+          elOrigin.className = "marker-origin custom-origin-pin";
+          elOrigin.innerHTML = "A";
+          elOrigin.title = `Custom Origin (${pts.origin[1].toFixed(4)}, ${pts.origin[0].toFixed(4)})`;
+          map._originMarker = new maplibregl.Marker({ element: elOrigin })
+            .setLngLat(pts.origin)
+            .addTo(map);
+        }
+      } else if (map._originMarker) {
+        map._originMarker.remove();
+        map._originMarker = null;
+      }
+
+      if (pts && pts.destination) {
+        if (map._destMarker) {
+          map._destMarker.setLngLat(pts.destination);
+        } else {
+          const elDest = document.createElement("div");
+          elDest.className = "marker-dest custom-dest-pin";
+          elDest.innerHTML = "B";
+          elDest.title = `Custom Destination (${pts.destination[1].toFixed(4)}, ${pts.destination[0].toFixed(4)})`;
+          map._destMarker = new maplibregl.Marker({ element: elDest })
+            .setLngLat(pts.destination)
+            .addTo(map);
+        }
+      } else if (map._destMarker) {
+        map._destMarker.remove();
+        map._destMarker = null;
+      }
+      return;
+    }
+
     if (!corridor) return;
     const originCoords = corridor.origin?.coordinates || [77.2195, 28.6328];
     const destCoords = corridor.destination?.coordinates || [77.2345, 28.6258];

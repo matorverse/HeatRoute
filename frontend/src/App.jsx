@@ -32,6 +32,11 @@ export default function App() {
   const [selectedCorridorId, setSelectedCorridorId] = useState("DELHI_CP_TO_MANDI_HOUSE");
   const [activePitstopPoiId, setActivePitstopPoiId] = useState(null);
 
+  // Custom Point-to-Point Planner State
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customPoints, setCustomPoints] = useState({ origin: null, destination: null });
+  const [customStatusMessage, setCustomStatusMessage] = useState("");
+
   const [currentHour, setCurrentHour] = useState(13.5); // Default: 1:30 PM (Peak Delhi Heat)
   const [evaluationData, setEvaluationData] = useState(null);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
@@ -51,12 +56,28 @@ export default function App() {
   }, []);
 
   const activeCorridor = useMemo(() => {
+    if (isCustomMode && customPoints.origin && customPoints.destination) {
+      return {
+        id: "CUSTOM_PLANNER",
+        name: `Custom Route (${customPoints.origin[1].toFixed(3)}, ${customPoints.origin[0].toFixed(3)} → ${customPoints.destination[1].toFixed(3)}, ${customPoints.destination[0].toFixed(3)})`,
+        city: "Live Map Pick",
+        origin: { name: `Start (${customPoints.origin[1].toFixed(4)}, ${customPoints.origin[0].toFixed(4)})`, coordinates: customPoints.origin },
+        destination: { name: `Destination (${customPoints.destination[1].toFixed(4)}, ${customPoints.destination[0].toFixed(4)})`, coordinates: customPoints.destination }
+      };
+    }
     return corridors.find(c => c.id === selectedCorridorId) || corridors[0];
-  }, [corridors, selectedCorridorId]);
+  }, [corridors, selectedCorridorId, isCustomMode, customPoints]);
 
   // Recalculate routes on parameter change with 100ms debounce
   useEffect(() => {
     let isMounted = true;
+
+    // If in custom mode but points are not both placed, don't trigger
+    if (isCustomMode && (!customPoints.origin || !customPoints.destination)) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     const hours = Math.floor(currentHour);
@@ -76,12 +97,17 @@ export default function App() {
         humidityPct: humidity,
         modePreference: "BALANCED",
         season: season,
-        corridorId: selectedCorridorId,
+        corridorId: isCustomMode ? "CUSTOM_PLANNER" : selectedCorridorId,
+        origin: isCustomMode ? customPoints.origin : null,
+        destination: isCustomMode ? customPoints.destination : null,
         pitstopPoiId: activePitstopPoiId
       }).then(data => {
         if (isMounted) {
           setEvaluationData(data);
           setIsLoading(false);
+          if (isCustomMode && customPoints.origin && customPoints.destination) {
+            setCustomStatusMessage("✓ Custom Routes Active · Click map to repick or Reset");
+          }
           // Preserve currently selected route if valid, otherwise fallback to recommended
           setSelectedRouteId(prev => {
             if (prev && data.routes?.some(r => r.id === prev && r.mode !== "REJECTED_UNSAFE")) {
@@ -98,7 +124,7 @@ export default function App() {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [currentHour, season, selectedCorridorId, activePitstopPoiId]);
+  }, [currentHour, season, selectedCorridorId, activePitstopPoiId, isCustomMode, customPoints]);
 
   const handleSelectRoute = useCallback((id) => {
     setSelectedRouteId(id);
@@ -116,6 +142,43 @@ export default function App() {
     setSelectedCorridorId(e.target.value);
     setActivePitstopPoiId(null);
   };
+
+  // Toggle Custom Mode
+  const handleToggleCustomMode = useCallback(() => {
+    setIsCustomMode(prev => {
+      const next = !prev;
+      if (next) {
+        setCustomPoints({ origin: null, destination: null });
+        setCustomStatusMessage("👉 Click anywhere on map to drop Start Pin (A)");
+      } else {
+        setCustomPoints({ origin: null, destination: null });
+        setCustomStatusMessage("");
+        setSelectedCorridorId("DELHI_CP_TO_MANDI_HOUSE");
+      }
+      return next;
+    });
+  }, []);
+
+  // Map Click handler for Custom Points
+  const handleMapClickPoint = useCallback((coords) => {
+    if (!customPoints.origin) {
+      setCustomPoints({ origin: coords, destination: null });
+      setCustomStatusMessage("👉 Start (A) placed! Now click on map to set Destination (B)");
+    } else if (!customPoints.destination) {
+      setCustomPoints(prev => ({ ...prev, destination: coords }));
+      setCustomStatusMessage("✓ Calculating microclimate routes...");
+    } else {
+      // Repicking origin
+      setCustomPoints({ origin: coords, destination: null });
+      setCustomStatusMessage("👉 New Start (A) placed! Click to set Destination (B)");
+    }
+  }, [customPoints]);
+
+  // Reset custom points
+  const handleResetCustomPoints = useCallback(() => {
+    setCustomPoints({ origin: null, destination: null });
+    setCustomStatusMessage("👉 Click anywhere on map to drop Start Pin (A)");
+  }, []);
 
   // Hands-free speech synthesis
   const handleToggleSpeech = useCallback(() => {
@@ -160,6 +223,9 @@ export default function App() {
           activeCorridor={activeCorridor}
           activePitstopPoiId={activePitstopPoiId}
           onTogglePitstop={handleTogglePitstop}
+          isCustomMode={isCustomMode}
+          customPoints={customPoints}
+          onMapClickPoint={handleMapClickPoint}
         />
       </main>
 
@@ -209,22 +275,36 @@ export default function App() {
             </button>
           </div>
 
-          <div className="hud-corridor-select-box">
-            <MapPin size={13} color="var(--color-heat-primary)" />
-            <select
-              id="corridor-select"
-              className="hud-corridor-dropdown"
-              value={selectedCorridorId}
-              onChange={handleCorridorChange}
-            >
-              {corridors.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.city})
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="hud-dropdown-caret" />
-          </div>
+          {/* Interactive Point-to-Point Custom Route Planner Toggle */}
+          <button
+            id="toggle-custom-planner-btn"
+            type="button"
+            className={`hud-custom-planner-btn ${isCustomMode ? "active" : ""}`}
+            onClick={handleToggleCustomMode}
+            title={isCustomMode ? "Exit Custom Planner" : "Click any two points on the map to calculate routes in real-time"}
+          >
+            <MapPin size={13} color={isCustomMode ? "#FF6B2B" : "currentColor"} />
+            <span>{isCustomMode ? "Exit Custom" : "📍 Pick on Map"}</span>
+          </button>
+
+          {!isCustomMode && (
+            <div className="hud-corridor-select-box">
+              <MapPin size={13} color="var(--color-heat-primary)" />
+              <select
+                id="corridor-select"
+                className="hud-corridor-dropdown"
+                value={selectedCorridorId}
+                onChange={handleCorridorChange}
+              >
+                {corridors.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.city})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="hud-dropdown-caret" />
+            </div>
+          )}
         </div>
 
         {/* Right: Environmental Microclimate Telemetry & Actions */}
@@ -282,6 +362,28 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Floating Interactive Route Planner Guidance Toast */}
+      {isCustomMode && (
+        <div className="hud-custom-instruction-pill">
+          <div className="custom-pill-left">
+            <span className="pulsing-beacon-amber" />
+            <span className="custom-pill-text">
+              {customStatusMessage || (!customPoints.origin ? "Click anywhere on map to drop Start Pin (A)" : "Click map to drop Destination Pin (B)")}
+            </span>
+          </div>
+          {customPoints.origin && (
+            <button
+              type="button"
+              className="custom-pill-reset-btn"
+              onClick={handleResetCustomPoints}
+              title="Clear pins and pick new coordinates"
+            >
+              Reset Pins
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 4. Left Floating Tactical Route Deck */}
       <aside className="hud-route-deck">

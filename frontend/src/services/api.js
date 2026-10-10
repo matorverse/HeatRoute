@@ -44,12 +44,16 @@ export async function fetchRouteEvaluation(params = {}) {
     maxDetourPercent = 25.0,
     season = "SUMMER",
     corridorId = "DELHI_CP_TO_MANDI_HOUSE",
+    origin = null,
+    destination = null,
     pitstopPoiId = null
   } = params;
 
   const targetCorridor = FALLBACK_CORRIDORS.find(c => c.id === corridorId) || FALLBACK_CORRIDORS[0];
+  const originCoords = origin || targetCorridor.origin.coordinates;
+  const destCoords = destination || targetCorridor.destination.coordinates;
 
-  const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}`;
+  const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${originCoords.join(",")}_${destCoords.join(",")}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}`;
   if (evaluationCache.has(cacheKey)) {
     return evaluationCache.get(cacheKey);
   }
@@ -65,8 +69,8 @@ export async function fetchRouteEvaluation(params = {}) {
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        origin: targetCorridor.origin.coordinates,
-        destination: targetCorridor.destination.coordinates,
+        origin: originCoords,
+        destination: destCoords,
         departure_time: departureTime,
         ambient_temp_c: ambientTempC,
         relative_humidity: humidityPct,
@@ -144,7 +148,87 @@ function simulateDynamicEvaluation({
   const matchedPoi = pitstopPoiId ? FALLBACK_HYDRATION_POIS.find(p => p.id === pitstopPoiId) : null;
 
   // Retrieve base candidate routes for this specific corridor
-  const rawBaseRoutes = FALLBACK_ROUTES_BY_CORRIDOR[activeCorridorId] || FALLBACK_ROUTES_BY_CORRIDOR.DELHI_CP_TO_MANDI_HOUSE;
+  let rawBaseRoutes = FALLBACK_ROUTES_BY_CORRIDOR[activeCorridorId];
+  if (!rawBaseRoutes && params.origin && params.destination) {
+    const o = params.origin;
+    const d = params.destination;
+    const dLon = d[0] - o[0];
+    const dLat = d[1] - o[1];
+    rawBaseRoutes = [
+      {
+        id: "custom-direct-route",
+        name: "Direct Arterial Path",
+        mode: "FASTEST",
+        is_recommended: false,
+        total_length_m: 1200,
+        total_duration_min: 15.0,
+        raw_exposure_score: 820.0,
+        exposure_label: "HIGH",
+        exposure_color: "#EF4444",
+        exposure_reduction_pct: 0.0,
+        avg_shade_percentage: 16.0,
+        path_coordinates: [
+          o,
+          [o[0] + dLon * 0.33, o[1] + dLat * 0.33],
+          [o[0] + dLon * 0.67, o[1] + dLat * 0.67],
+          d
+        ],
+        steps: [
+          { step_num: 1, instruction: "Depart origin along direct roadway", distance_m: 400, shade_info: "12% shade" },
+          { step_num: 2, instruction: "Continue on primary commercial strip", distance_m: 400, shade_info: "15% tree cover" },
+          { step_num: 3, instruction: "Arrive at destination point", distance_m: 400, shade_info: "Approaching destination" }
+        ]
+      },
+      {
+        id: "custom-canopy-route",
+        name: "Canopy & Shaded Boulevard",
+        mode: "COOLEST",
+        is_recommended: true,
+        total_length_m: 1380,
+        total_duration_min: 17.5,
+        raw_exposure_score: 460.0,
+        exposure_label: "LOW",
+        exposure_color: "#10B981",
+        exposure_reduction_pct: 35.5,
+        avg_shade_percentage: 84.0,
+        path_coordinates: [
+          o,
+          [o[0] + dLon * 0.3 - dLat * 0.2, o[1] + dLat * 0.3 + dLon * 0.2],
+          [o[0] + dLon * 0.7 - dLat * 0.25, o[1] + dLat * 0.7 + dLon * 0.25],
+          d
+        ],
+        steps: [
+          { step_num: 1, instruction: "Turn into shaded tree-lined avenue", distance_m: 450, shade_info: "Dense canopy (80%)" },
+          { step_num: 2, instruction: "Proceed through covered walkway and park", distance_m: 550, shade_info: "Continuous shade (85%)" },
+          { step_num: 3, instruction: "Reach destination safely", distance_m: 380, shade_info: "Protected tree cover" }
+        ]
+      },
+      {
+        id: "custom-balanced-route",
+        name: "Balanced Shaded Sidewalks",
+        mode: "BALANCED",
+        is_recommended: false,
+        total_length_m: 1280,
+        total_duration_min: 16.2,
+        raw_exposure_score: 590.0,
+        exposure_label: "MODERATE",
+        exposure_color: "#F59E0B",
+        exposure_reduction_pct: 20.0,
+        avg_shade_percentage: 52.0,
+        path_coordinates: [
+          o,
+          [o[0] + dLon * 0.5 + dLat * 0.12, o[1] + dLat * 0.5 - dLon * 0.12],
+          d
+        ],
+        steps: [
+          { step_num: 1, instruction: "Follow secondary street with sidewalk trees", distance_m: 640, shade_info: "52% shade" },
+          { step_num: 2, instruction: "Proceed to destination", distance_m: 640, shade_info: "48% shade" }
+        ]
+      }
+    ];
+  } else if (!rawBaseRoutes) {
+    rawBaseRoutes = FALLBACK_ROUTES_BY_CORRIDOR.DELHI_CP_TO_MANDI_HOUSE;
+  }
   let clonedRoutes = rawBaseRoutes.map(r => ({
     ...r,
     path_coordinates: [...r.path_coordinates]
