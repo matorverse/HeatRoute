@@ -31,3 +31,9 @@ Thumbs.db
 
 # AWS SAM build
 .aws-sam/
+
+# Demo Video Recordings (ignore raw recordings)
+demo_recordings/raw_video/
+demo_recordings/*.webm
+demo_recordings/*.mp3
+demo_recordings/audio_concat.txt
