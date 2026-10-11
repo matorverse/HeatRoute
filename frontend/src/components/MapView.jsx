@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -76,6 +76,7 @@ function MapView({
   const markersRef = useRef([]);
   const pitstopMarkerRef = useRef(null);
   const currentCorridorIdRef = useRef(activeCorridor?.id);
+  const [isLegendExpanded, setIsLegendExpanded] = useState(!isMobile);
 
   // Initialize MapLibre with Amazon Location Service or Carto Fallback
   useEffect(() => {
@@ -296,7 +297,7 @@ function MapView({
     if (source) {
       source.setData(geojsonData);
       map.setFilter("route-layer-inactive", ["!=", ["get", "id"], activeId || ""]);
-      map.setFilter("route-layer-glow", ["==", ["get", "id"], activeId || ""]);
+      map.setFilter("route-layer-casing", ["==", ["get", "id"], activeId || ""]);
       map.setFilter("route-layer-active", ["==", ["get", "id"], activeId || ""]);
     } else {
       map.addSource("routes-source", {
@@ -304,7 +305,7 @@ function MapView({
         data: geojsonData
       });
 
-      // Inactive routes
+      // 1. Inactive / alternative routes (subdued with dashed pattern)
       map.addLayer({
         id: "route-layer-inactive",
         type: "line",
@@ -312,27 +313,26 @@ function MapView({
         filter: ["!=", ["get", "id"], activeId || ""],
         paint: {
           "line-color": ["get", "color"],
-          "line-width": 4,
-          "line-opacity": 0.4,
-          "line-dasharray": [2, 1]
+          "line-width": 3.5,
+          "line-opacity": 0.5,
+          "line-dasharray": [3, 2]
         }
       });
 
-      // Glow layer
+      // 2. High-contrast dark casing layer for selected route
       map.addLayer({
-        id: "route-layer-glow",
+        id: "route-layer-casing",
         type: "line",
         source: "routes-source",
         filter: ["==", ["get", "id"], activeId || ""],
         paint: {
-          "line-color": ["get", "color"],
-          "line-width": 14,
-          "line-opacity": 0.28,
-          "line-blur": 6
+          "line-color": "#0B1018",
+          "line-width": 9,
+          "line-opacity": 0.95
         }
       });
 
-      // Active core line
+      // 3. Active route core line
       map.addLayer({
         id: "route-layer-active",
         type: "line",
@@ -340,7 +340,7 @@ function MapView({
         filter: ["==", ["get", "id"], activeId || ""],
         paint: {
           "line-color": ["get", "color"],
-          "line-width": 6,
+          "line-width": 5.5,
           "line-opacity": 0.98
         }
       });
@@ -449,15 +449,15 @@ function MapView({
       const isCurrentPitstop = (activePitstopPoiId === poi.id);
 
       const popup = new maplibregl.Popup({ offset: 15, closeButton: true }).setHTML(`
-        <div style="font-family: sans-serif; font-size: 12px; color: #111827; padding: 4px; min-width: 170px;">
-          <strong style="color: #0284C7; font-size: 13px;">${poi.name}</strong><br/>
-          <span style="color: #4B5563;">Type: ${poi.type.replace(/_/g, ' ')}</span><br/>
-          <span style="color: #10B981; font-weight: 600;">● ${poi.verified_status}</span><br/>
-          <small style="color: #6B7280;">${poi.features?.join(", ") || ""}</small>
+        <div style="font-family: var(--font-body), -apple-system, sans-serif; font-size: 12px; color: #F1F5FB; padding: 6px; min-width: 180px;">
+          <strong style="color: #42D5FF; font-size: 13px; font-weight: 700;">${poi.name}</strong><br/>
+          <span style="color: #98A8BD; font-size: 11px;">Type: ${poi.type.replace(/_/g, ' ')}</span><br/>
+          <span style="color: #31D5B0; font-weight: 600; font-size: 11px;">● ${poi.verified_status}</span><br/>
+          <small style="color: #64748B; font-size: 10px;">${poi.features?.join(", ") || ""}</small>
           <div style="margin-top: 8px;">
             <button 
               id="btn-pitstop-${poi.id}" 
-              style="width: 100%; padding: 5px 8px; font-size: 11px; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid ${isCurrentPitstop ? '#EF4444' : '#0284C7'}; background: ${isCurrentPitstop ? '#FEE2E2' : '#E0F2FE'}; color: ${isCurrentPitstop ? '#B91C1C' : '#0369A1'};"
+              style="width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid ${isCurrentPitstop ? '#FF555F' : '#42D5FF'}; background: ${isCurrentPitstop ? 'rgba(255, 85, 95, 0.2)' : 'rgba(66, 213, 255, 0.2)'}; color: ${isCurrentPitstop ? '#FCA5A5' : '#42D5FF'}; transition: all 0.15s ease;"
             >
               ${isCurrentPitstop ? "✖ Remove Waypoint" : "+ Add Route Waypoint"}
             </button>
@@ -490,28 +490,45 @@ function MapView({
     <div className="map-view-wrapper">
       <div id="maplibre-canvas" ref={mapContainerRef} />
       
-      {/* Map Engine Provider Badge */}
-      <div className="map-floating-badge" style={{ left: "20px", right: "auto", padding: "8px 14px" }}>
-        <span style={{ fontSize: "1rem" }}>{hasAwsLocationConfig ? "☁️" : "🗺️"}</span>
-        <div>
-          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            Map Engine
-          </div>
-          <div style={{ fontSize: "0.78rem", fontWeight: "700", color: hasAwsLocationConfig ? "#FF9900" : "var(--color-primary)" }}>
-            {hasAwsLocationConfig ? `AWS Location (${AWS_MAP_NAME || AWS_STYLE_NAME})` : "Carto Dark (Fallback)"}
-          </div>
+      {/* On-Map Tactical Route & Hazard Legend */}
+      <div className={`map-tactical-legend ${isMobile ? "mobile-legend" : ""}`}>
+        <div className="legend-header-row">
+          <span className="legend-title">Route & Hazard Legend</span>
+          <button
+            type="button"
+            className="legend-toggle-btn"
+            onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+            title={isLegendExpanded ? "Collapse legend" : "Expand legend"}
+            aria-label="Toggle map legend"
+          >
+            {isLegendExpanded ? "−" : "+"}
+          </button>
         </div>
-      </div>
 
-      {/* Real-time Solar Angle Floating Badge */}
-      <div className="map-floating-badge">
-        <span className="floating-sun-icon">☀️</span>
-        <div>
-          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Solar Vector</div>
-          <div style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--color-solar)" }}>
-            Alt: {solarAltitude}° | Az: {solarAzimuth}°
+        {isLegendExpanded && (
+          <div className="legend-items-list">
+            <div className="legend-item">
+              <span className="legend-swatch active-route" />
+              <span>Selected Path (Cased)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-swatch cool-route" />
+              <span>High Shade / Arcade</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-swatch alt-route" />
+              <span>Alternative Paths</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-swatch hazard-route" />
+              <span>Severe Flood / Unsafe</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-swatch water-point">💧</span>
+              <span>Water & Rest Stop</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

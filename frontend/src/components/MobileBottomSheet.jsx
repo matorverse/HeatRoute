@@ -261,39 +261,45 @@ export function MobileBottomSheet({
           </button>
         </div>
 
-        {/* Health Advisory / IMD Warning Banner */}
+        {/* Official Health Advisory Banner (IMD Criterion) */}
         {activeSeason === "SUMMER" && heatIndex >= 54.0 && (
           <div className="health-advisory-banner danger mobile-advisory">
-            <AlertOctagon size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <AlertOctagon size={16} color="#FF555F" style={{ flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <strong style={{ color: "#FCA5A5" }}>IMD Red Alert ({heatIndex}°C):</strong> Severe heat stroke risk. Drink 500ml water every 30m. Prefer shaded colonial arcades.
+              <div className="advisory-source-tag">IMD Heatwave Criterion: Red Alert (&gt;45°C)</div>
+              <div className="advisory-body-text">Severe heat stroke hazard. Drink 500ml water every 30m. Prefer shaded colonial arcades.</div>
             </div>
           </div>
         )}
 
         {activeSeason === "SUMMER" && heatIndex >= 40.0 && heatIndex < 54.0 && (
           <div className="health-advisory-banner warning mobile-advisory">
-            <AlertTriangle size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <AlertTriangle size={16} color="#FFBC59" style={{ flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <strong style={{ color: "#FDE68A" }}>Heat Caution:</strong> Heat cramps probable. Favor heritage tree canopies.
+              <div className="advisory-source-tag">IMD Caution: High Heat Stress</div>
+              <div className="advisory-body-text">Heat cramps probable under direct sun. Favor heritage tree canopies.</div>
             </div>
           </div>
         )}
 
         {activeSeason === "MONSOON" && (
           <div className="health-advisory-banner monsoon mobile-advisory">
-            <CloudRain size={16} color="#38BDF8" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <CloudRain size={16} color="#42D5FF" style={{ flexShrink: 0, marginTop: "2px" }} />
             <div>
-              <strong style={{ color: "#BAE6FD" }}>Monsoon Inundation Warning:</strong> Flash flooding detected in railway subways. Colonnades and elevated footpaths recommended.
+              <div className="advisory-source-tag">Official Flood Warning: Urban Inundation</div>
+              <div className="advisory-body-text">Flash flooding detected in railway subways. Colonnades and elevated footpaths recommended.</div>
             </div>
           </div>
         )}
 
-        {/* Decision Summary Card */}
+        {/* HeatRoute AI Decision Summary Card */}
         {decisionSummary && (
           <div className="decision-card mobile-decision">
             <Sparkles size={16} className="decision-icon" />
-            <div className="decision-text">{decisionSummary}</div>
+            <div className="decision-content-wrap">
+              <span className="decision-source-tag">HeatRoute AI Route Rationale</span>
+              <div className="decision-text">{decisionSummary}</div>
+            </div>
           </div>
         )}
 

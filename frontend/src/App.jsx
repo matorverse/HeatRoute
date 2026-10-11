@@ -365,17 +365,20 @@ export default function App() {
           {/* Right: Environmental Microclimate Telemetry & Actions */}
           <div className="hud-actions-right">
             <div className="hud-metrics-strip">
-              <div className="hud-metric-chip">
-                <span className="chip-label">TEMP</span>
+              <div className="hud-metric-chip" title="Measured dry-bulb ambient air temperature">
+                <span className="chip-label">AIR TEMP</span>
                 <span className="chip-val">{evaluationData?.ambient_temp_c || 43.5}°C</span>
               </div>
-              <div className="hud-metric-chip">
+              <div className="hud-metric-chip" title="Atmospheric relative humidity percentage">
                 <span className="chip-label">HUMIDITY</span>
                 <span className="chip-val">{evaluationData?.relative_humidity || 42}%</span>
               </div>
-              <div className="hud-metric-chip">
-                <span className="chip-label">{season === "MONSOON" ? "FLOOD RISK" : "HEAT INDEX"}</span>
-                <span className="chip-val heat" style={{ color: season === "MONSOON" ? "#38BDF8" : "var(--color-solar)" }}>
+              <div 
+                className="hud-metric-chip" 
+                title={season === "MONSOON" ? "Monsoon flash flooding & waterlogging status" : "Modeled apparent temperature (Rothfusz / Steadman equation accounting for solar geometry)"}
+              >
+                <span className="chip-label">{season === "MONSOON" ? "FLOOD RISK" : "HEAT INDEX (MODELED)"}</span>
+                <span className="chip-val heat" style={{ color: season === "MONSOON" ? "#42D5FF" : "var(--color-heat-amber)" }}>
                   {season === "MONSOON" ? "ALERT" : `${heatIndex}°C`}
                 </span>
               </div>
@@ -475,30 +478,33 @@ export default function App() {
               </div>
             )}
 
-            {/* Health Advisory Banner (IMD / Medical Standard) */}
+            {/* Health Advisory Banner (IMD Criterion / Official Public Safety) */}
             {season === "SUMMER" && heatIndex >= 54.0 && (
               <div className="health-advisory-banner danger">
-                <AlertOctagon size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: "2px" }} />
+                <AlertOctagon size={16} color="#FF555F" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
-                  <strong style={{ color: "#FCA5A5" }}>IMD Red Alert (Extreme Heat Hazard):</strong> Heat stroke risk imminent. Hydration quota: 500ml every 30m. Rest in covered shade every 1 km.
+                  <div className="advisory-source-tag">IMD Heatwave Criterion: Red Alert (&gt;45°C)</div>
+                  <div className="advisory-body-text">Extreme heat stroke hazard. Drink 500ml water every 30m. Rest in covered shade every 1 km.</div>
                 </div>
               </div>
             )}
 
             {season === "SUMMER" && heatIndex >= 40.0 && heatIndex < 54.0 && (
               <div className="health-advisory-banner warning">
-                <AlertTriangle size={16} color="#F59E0B" style={{ flexShrink: 0, marginTop: "2px" }} />
+                <AlertTriangle size={16} color="#FFBC59" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
-                  <strong style={{ color: "#FDE68A" }}>High Heat Caution:</strong> Heat cramps likely. Drink 350ml water every 30m. Favor heritage tree canopies.
+                  <div className="advisory-source-tag">IMD Caution: High Heat Stress</div>
+                  <div className="advisory-body-text">Heat cramps likely under direct sun. Drink 350ml water every 30m. Favor heritage tree canopies.</div>
                 </div>
               </div>
             )}
 
             {season === "MONSOON" && (
               <div className="health-advisory-banner monsoon">
-                <CloudRain size={16} color="#38BDF8" style={{ flexShrink: 0, marginTop: "2px" }} />
+                <CloudRain size={16} color="#42D5FF" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
-                  <strong style={{ color: "#BAE6FD" }}>Monsoon Inundation Warning:</strong> Flash flooding detected in railway subways and sunken underpasses. Elevated colonnade paths advised.
+                  <div className="advisory-source-tag">Official Flood Warning: Urban Inundation</div>
+                  <div className="advisory-body-text">Waterlogging detected in railway subways and sunken underpasses (&gt;1.2m). Elevated colonnade paths advised.</div>
                 </div>
               </div>
             )}
@@ -506,9 +512,12 @@ export default function App() {
             {/* Explainable Decision Summary */}
             {evaluationData?.decision_summary && (
               <div className="decision-card">
-                <Sparkles size={18} className="decision-icon" />
-                <div className="decision-text">
-                  {evaluationData.decision_summary}
+                <Sparkles size={16} className="decision-icon" />
+                <div className="decision-content-wrap">
+                  <span className="decision-source-tag">HeatRoute AI Route Rationale</span>
+                  <div className="decision-text">
+                    {evaluationData.decision_summary}
+                  </div>
                 </div>
               </div>
             )}

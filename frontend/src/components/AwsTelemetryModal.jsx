@@ -68,9 +68,9 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
 
           <div className="aws-card-row">
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Database color="#38BDF8" size={18} />
+              <Database color="#42D5FF" size={18} />
               <div>
-                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-main)" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-primary)" }}>
                   Amazon DynamoDB
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
@@ -79,7 +79,7 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "#38BDF8" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "#42D5FF" }}>
                 {telemetry?.dynamodb_queried_pois || 7} POIs
               </span>
               <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>queried active</div>
@@ -88,9 +88,9 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
 
           <div className="aws-card-row">
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <HardDrive color="#FBBF24" size={18} />
+              <HardDrive color="#FFBC59" size={18} />
               <div>
-                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-main)" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-primary)" }}>
                   Amazon S3
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
@@ -99,7 +99,7 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#10B981" }}>
+              <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#31D5B0" }}>
                 100% Demo Uptime
               </span>
               <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>zero API downtime</div>
@@ -108,9 +108,9 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
 
           <div className="aws-card-row">
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Activity color="#EF4444" size={18} />
+              <Activity color="#FF555F" size={18} />
               <div>
-                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-main)" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: "600", color: "var(--text-primary)" }}>
                   Amazon CloudWatch Custom Metrics
                 </div>
                 <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
@@ -119,7 +119,7 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: "0.95rem", fontWeight: "800", color: "var(--color-accent)" }}>
+              <span style={{ fontSize: "0.95rem", fontWeight: "800", color: "var(--color-accent-cyan)" }}>
                 {telemetry?.cloudwatch_metric?.value || 14.2} hrs
               </span>
               <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>heat stress avoided</div>
@@ -127,9 +127,9 @@ export default function AwsTelemetryModal({ isOpen, onClose, telemetry, isLiveCl
           </div>
         </div>
 
-        <div style={{ marginTop: "18px", padding: "10px 14px", background: "rgba(15, 23, 42, 0.8)", borderRadius: "8px", border: "1px solid var(--border-subtle)", fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ marginTop: "18px", padding: "10px 14px", background: "rgba(11, 16, 24, 0.9)", borderRadius: "8px", border: "1px solid var(--border-subtle)", fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>AWS Region: <strong>{import.meta.env.VITE_AWS_REGION || "ap-southeast-2"}</strong></span>
-          <span style={{ color: isLiveCloud || hasLocationConfig ? "#10B981" : "#F59E0B" }}>
+          <span style={{ color: isLiveCloud || hasLocationConfig ? "#31D5B0" : "#FFBC59", fontWeight: "600" }}>
             ● {hasLocationConfig ? "AWS Location Live" : (isLiveCloud ? "Live AWS Connection" : "Deterministic Fallback")}
           </span>
         </div>
