@@ -12,12 +12,12 @@ class Coordinates(BaseModel):
 
 
 class RouteRequest(BaseModel):
-    origin: List[float] = Field(default=[77.2195, 28.6328], description="[lon, lat]")
-    destination: List[float] = Field(default=[77.2345, 28.6258], description="[lon, lat]")
+    origin: List[float] = Field(default=[77.2195, 28.6328], min_length=2, max_length=2, description="[lon, lat]")
+    destination: List[float] = Field(default=[77.2345, 28.6258], min_length=2, max_length=2, description="[lon, lat]")
     departure_time: Optional[str] = Field(default="2026-06-15T13:30:00+05:30", description="ISO departure time")
-    ambient_temp_c: Optional[float] = Field(default=42.5, description="Ambient temperature override in Celsius")
-    relative_humidity: Optional[float] = Field(default=48.0, description="Relative humidity override %")
-    max_detour_percent: Optional[float] = Field(default=25.0, description="Max acceptable detour vs fastest route")
+    ambient_temp_c: Optional[float] = Field(default=42.5, ge=-10.0, le=60.0, description="Ambient temperature override in Celsius")
+    relative_humidity: Optional[float] = Field(default=48.0, ge=0.0, le=100.0, description="Relative humidity override %")
+    max_detour_percent: Optional[float] = Field(default=25.0, ge=0.0, le=100.0, description="Max acceptable detour vs fastest route")
     mode_preference: Optional[str] = Field(default="BALANCED", description="FASTEST | BALANCED | COOLEST")
     season: Optional[str] = Field(default="SUMMER", description="SUMMER | MONSOON")
     corridor_id: Optional[str] = Field(default="DELHI_CP_TO_MANDI_HOUSE", description="Corridor identifier")
@@ -72,6 +72,10 @@ class EvaluatedRoute(BaseModel):
     safety: SafetyInfo
     contributing_factors: List[str]
     confidence: str
+    uncertainty_margin_pct: Optional[float] = 8.0
+    estimated_exposure_range: Optional[List[float]] = None
+    scientific_disclaimer: Optional[str] = None
+    detour_cap_enforced: Optional[bool] = False
     path_coordinates: List[List[float]]
     segments: List[SegmentOutput]
     steps: Optional[List[NavigationStep]] = []
@@ -99,7 +103,9 @@ class RouteResponse(BaseModel):
     ambient_temp_c: float
     relative_humidity: float
     heat_index_c: float
+    detour_cap_enforced: Optional[bool] = False
     routes: List[EvaluatedRoute]
     hydration_pois: List[HydrationPOI]
     decision_summary: str
     aws_telemetry: Dict[str, Any]
+    uncertainty_note: Optional[str] = None

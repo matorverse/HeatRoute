@@ -78,20 +78,43 @@ def evaluate_routes(request: RouteRequest):
     Evaluates pedestrian routes through safety filters, solar geometry,
     relative thermal exposure, and detour limits.
     """
-    departure = request.departure_time or datetime.now(timezone.utc).isoformat()
-    result = optimize_routes(
-        origin=request.origin,
-        destination=request.destination,
-        departure_time_iso=departure,
-        ambient_temp_c=request.ambient_temp_c or 42.0,
-        humidity_pct=request.relative_humidity or 45.0,
-        max_detour_percent=request.max_detour_percent or 25.0,
-        mode_preference=request.mode_preference or "BALANCED",
-        season=request.season or "SUMMER",
-        corridor_id=request.corridor_id or "DELHI_CP_TO_MANDI_HOUSE",
-        pitstop_poi_id=request.pitstop_poi_id
-    )
-    return result
+    from fastapi import HTTPException
+
+    # Defensive coordinate bounds validation
+    for coord_name, pt in [("origin", request.origin), ("destination", request.destination)]:
+        if len(pt) != 2:
+            raise HTTPException(status_code=422, detail=f"Invalid {coord_name}: must contain exactly [lon, lat].")
+        lon, lat = pt[0], pt[1]
+        if not (-180.0 <= lon <= 180.0) or not (-90.0 <= lat <= 90.0):
+            raise HTTPException(
+                status_code=422, 
+                detail=f"Invalid {coord_name} coordinates [{lon}, {lat}]: longitude must be in [-180, 180] and latitude in [-90, 90]."
+            )
+
+    try:
+        departure = request.departure_time or datetime.now(timezone.utc).isoformat()
+        result = optimize_routes(
+            origin=request.origin,
+            destination=request.destination,
+            departure_time_iso=departure,
+            ambient_temp_c=request.ambient_temp_c if request.ambient_temp_c is not None else 42.0,
+            humidity_pct=request.relative_humidity if request.relative_humidity is not None else 45.0,
+            max_detour_percent=request.max_detour_percent if request.max_detour_percent is not None else 25.0,
+            mode_preference=request.mode_preference or "BALANCED",
+            season=request.season or "SUMMER",
+            corridor_id=request.corridor_id or "DELHI_CP_TO_MANDI_HOUSE",
+            pitstop_poi_id=request.pitstop_poi_id
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as exc:
+        import logging
+        logging.getLogger("heatroute").error(f"Route evaluation error: {exc}", exc_info=False)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal routing engine processing failure. Please verify input parameters."
+        )
 
 
 @app.get("/api/v1/hydration-pois")

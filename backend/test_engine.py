@@ -91,6 +91,98 @@ def test_pipeline():
     print(f"Decision with pitstop: {res_pitstop['decision_summary']}")
     first_route = res_pitstop["routes"][0]
     print(f"Coordinates count with waypoint: {len(first_route['path_coordinates'])}")
+    assert len(first_route["path_coordinates"]) > 5, "Waypoints should be inserted into path geometry"
+
+    print("\n" + "=" * 80)
+    print("TEST 6: Detour Cap Constraint Violation & Enforcement")
+    print("=" * 80)
+    # Test strict detour cap of 10.0%
+    res_capped = optimize_routes(
+        [77.2195, 28.6328],
+        [77.2345, 28.6258],
+        "2026-06-15T13:30:00+05:30",
+        ambient_temp_c=43.5,
+        humidity_pct=42.0,
+        max_detour_percent=10.0,
+        mode_preference="COOLEST",
+        corridor_id="DELHI_CP_TO_MANDI_HOUSE"
+    )
+    print(f"Detour cap enforced flag: {res_capped['detour_cap_enforced']}")
+    rec_route = [r for r in res_capped["routes"] if r.get("is_recommended")][0]
+    print(f"Recommended route: {rec_route['name']} | Detour: +{rec_route['detour_percent']}%")
+    assert res_capped["detour_cap_enforced"] is True, "Detour cap must be flagged as enforced when lowest exposure exceeds threshold"
+    assert rec_route["detour_percent"] <= 10.0, f"Recommended route detour ({rec_route['detour_percent']}%) must not exceed max cap (10.0%)"
+    print("  ✓ PASS: Detour ceiling strictly bounded alternative selection.")
+
+    print("\n" + "=" * 80)
+    print("TEST 7: Thermal Rothfusz Edge Cases & Extreme Weather Bounds")
+    print("=" * 80)
+    from app.thermal_engine import calculate_heat_index
+    import math
+
+    t_freezing = calculate_heat_index(0.0, 60.0)
+    t_scorching = calculate_heat_index(52.0, 95.0)
+    t_arid = calculate_heat_index(45.0, 0.0)
+    print(f"Heat Index at 0°C, 60% RH: {t_freezing}°C")
+    print(f"Heat Index at 52°C, 95% RH: {t_scorching}°C")
+    print(f"Heat Index at 45°C, 0% RH: {t_arid}°C")
+    for val in [t_freezing, t_scorching, t_arid]:
+        assert not math.isnan(val) and not math.isinf(val), "Heat index must produce finite real numbers"
+    print("  ✓ PASS: Thermal index remains finite across extreme temperature & humidity spectrum.")
+
+    print("\n" + "=" * 80)
+    print("TEST 8: Zero-Length Segment Defense & Physical Parameter Guards")
+    print("=" * 80)
+    from app.thermal_engine import calculate_segment_exposure
+    seg_zero = calculate_segment_exposure(
+        length_m=0.0,
+        effective_shade=1.5, # Over-clamped
+        surface_type="unknown_asphalt_mix",
+        base_heat_index_c=45.0,
+        solar_altitude_deg=90.0,
+        wind_speed_kmh=0.0
+    )
+    print(f"Zero length segment output: {seg_zero}")
+    assert seg_zero["duration_sec"] == 0, "Zero length must produce zero duration"
+    assert seg_zero["segment_exposure_score"] == 0.0, "Zero duration must accumulate 0 thermal exposure points"
+    assert seg_zero["effective_shade"] == 1.0, "Shade must be clamped to 1.0"
+    print("  ✓ PASS: Segment thermal engine safely guards physical parameters.")
+
+    print("\n" + "=" * 80)
+    print("TEST 9: Custom Dynamic Routing Synthesis & Road Network Conformance")
+    print("=" * 80)
+    from app.route_optimizer import generate_custom_corridor
+    custom_corridor = generate_custom_corridor([77.2150, 28.6300], [77.2250, 28.6400], season="SUMMER")
+    print(f"Custom corridor name: {custom_corridor['name']}")
+    assert len(custom_corridor["candidate_routes"]) == 3, "Custom planner must synthesize exactly 3 mode candidates"
+    for cr in custom_corridor["candidate_routes"]:
+        assert len(cr["path_coordinates"]) >= 4, "Custom routes must contain multi-vertex path coordinates"
+        assert len(cr["segments"]) >= 1, "Custom routes must contain segment breakdowns"
+    print("  ✓ PASS: Custom point-to-point corridor synthesis operational.")
+
+    print("\n" + "=" * 80)
+    print("TEST 10: Scientific Honesty & Uncertainty Margins Verification")
+    print("=" * 80)
+    res_uncertainty = optimize_routes(
+        [77.2195, 28.6328],
+        [77.2345, 28.6258],
+        "2026-06-15T13:30:00+05:30",
+        corridor_id="DELHI_CP_TO_MANDI_HOUSE"
+    )
+    assert "uncertainty_note" in res_uncertainty, "Response must include scientific uncertainty note"
+    for r in res_uncertainty["routes"]:
+        if r["mode"] != "REJECTED_UNSAFE":
+            assert "uncertainty_margin_pct" in r, "Route must provide explicit uncertainty margin percentage"
+            assert "estimated_exposure_range" in r, "Route must provide lower and upper modeled bounds"
+            assert len(r["estimated_exposure_range"]) == 2, "Exposure range must be [low, high]"
+            assert r["estimated_exposure_range"][0] <= r["estimated_exposure_range"][1], "Range low must be <= range high"
+    print(f"Uncertainty Note: {res_uncertainty['uncertainty_note']}")
+    print(f"Sample Route Exposure Range: {res_uncertainty['routes'][0]['estimated_exposure_range']} (Margin: ±{res_uncertainty['routes'][0]['uncertainty_margin_pct']}%)")
+    print("  ✓ PASS: Scientific honesty and uncertainty margins properly modeled and surfaced.")
+
+    print("\n" + "=" * 80)
+    print("ALL 10 VERIFICATION TESTS PASSED SUCCESSFULLY!")
+    print("=" * 80)
 
 if __name__ == "__main__":
     test_pipeline()

@@ -465,8 +465,9 @@ def optimize_routes(
                 solar_azimuth_deg=solar_pos["azimuth_deg"]
             )
 
+            seg_len = max(1.0, float(seg.get("length_m", 1.0)))
             seg_exposure = calculate_segment_exposure(
-                length_m=seg["length_m"],
+                length_m=seg_len,
                 effective_shade=shade_info["effective_shade"],
                 surface_type=seg.get("surface_type", "asphalt"),
                 base_heat_index_c=heat_index_c,
@@ -501,7 +502,8 @@ def optimize_routes(
             total_duration_sec += 90.0  # +1.5 min hydration dwell
 
         route_exposure = evaluate_route_thermal_exposure(
-            segments_eval, raw_route["total_length_m"], total_duration_sec
+            segments_eval, raw_route["total_length_m"], total_duration_sec,
+            is_curated_gis=not is_custom
         )
 
         evaluated_routes.append({
@@ -522,6 +524,10 @@ def optimize_routes(
             "safety": safety_result,
             "contributing_factors": route_exposure["contributing_factors"],
             "confidence": route_exposure["confidence"],
+            "uncertainty_margin_pct": route_exposure.get("uncertainty_margin_pct", 8.0),
+            "estimated_exposure_range": route_exposure.get("estimated_exposure_range"),
+            "scientific_disclaimer": route_exposure.get("scientific_disclaimer"),
+            "detour_cap_enforced": False,
             "path_coordinates": coords,
             "segments": segments_eval,
             "steps": raw_route.get("steps", [])
@@ -543,6 +549,7 @@ def optimize_routes(
             "heat_index_c": heat_index_c,
             "routes": evaluated_routes,
             "hydration_pois": corridor_pois,
+            "detour_cap_enforced": False,
             "decision_summary": f"All candidate routes in {corridor['name']} failed pedestrian safety and flood risk filters for {season}.",
             "aws_telemetry": {
                 "aws_region": "ap-south-1 (Mumbai)",
@@ -562,7 +569,7 @@ def optimize_routes(
     fastest_duration = fastest_route["total_duration_min"]
     fastest_exposure = fastest_route["raw_exposure_score"]
 
-    # Compute detour % and exposure reduction %
+    # Compute detour % and exposure reduction % relative to fastest baseline
     for r in safe_routes:
         detour = ((r["total_duration_min"] - fastest_duration) / max(0.1, fastest_duration)) * 100.0
         r["detour_percent"] = round(max(0.0, detour), 1)
@@ -570,11 +577,20 @@ def optimize_routes(
         exposure_diff = ((fastest_exposure - r["raw_exposure_score"]) / max(0.1, fastest_exposure)) * 100.0
         r["exposure_reduction_pct"] = round(max(0.0, exposure_diff), 1)
 
-    # Classify modes
+    detour_cap_enforced = False
+    detour_cap_note = ""
+
+    # Classify modes & enforce detour threshold
     if is_monsoon:
-        # In monsoon: Prioritize dry, covered, zero-waterlogging paths
-        covered_routes = [r for r in safe_routes if r["waterlogging_risk"] == "NONE"]
-        sheltered_route = covered_routes[0] if covered_routes else min(safe_routes, key=lambda r: r["raw_exposure_score"])
+        # In monsoon: Prioritize dry, covered, zero-waterlogging paths within detour tolerance
+        compliant_routes = [r for r in safe_routes if r["detour_percent"] <= max_detour_percent]
+        if not compliant_routes:
+            compliant_routes = [fastest_route]
+            detour_cap_enforced = True
+            detour_cap_note = f" (Note: Alternatives exceeded {max_detour_percent}% detour ceiling; fastest path maintained)."
+
+        covered_routes = [r for r in compliant_routes if r["waterlogging_risk"] == "NONE"]
+        sheltered_route = covered_routes[0] if covered_routes else min(compliant_routes, key=lambda r: r["raw_exposure_score"])
         
         for r in safe_routes:
             if r["id"] == fastest_route["id"]:
@@ -587,21 +603,39 @@ def optimize_routes(
         rec_route = sheltered_route if mode_preference != "FASTEST" else fastest_route
         rec_route["is_recommended"] = True
     else:
-        # Summer mode: Coolest is safe route with lowest thermal exposure overall
-        coolest_route = min(safe_routes, key=lambda r: r["raw_exposure_score"])
+        # Summer mode: Coolest is safe route with lowest thermal exposure overall that satisfies the detour cap
+        absolute_coolest = min(safe_routes, key=lambda r: r["raw_exposure_score"])
         
-        # Balanced route is safe route between fastest and coolest
+        # Check detour cap for coolest
+        eligible_cool = [r for r in safe_routes if r["detour_percent"] <= max_detour_percent]
+        if eligible_cool:
+            coolest_route = min(eligible_cool, key=lambda r: r["raw_exposure_score"])
+            if coolest_route["id"] != absolute_coolest["id"]:
+                detour_cap_enforced = True
+                detour_cap_note = f" (Lowest-exposure route exceeded {max_detour_percent}% detour cap; selected best compliant shaded path)."
+                coolest_route["detour_cap_enforced"] = True
+                coolest_route["contributing_factors"].append(
+                    f"Detour constraint enforced: Lowest exposure alternative exceeded {max_detour_percent}% detour ceiling; selected best compliant shaded alternative (+{coolest_route['detour_percent']}% detour)."
+                )
+        else:
+            # All shaded routes exceed detour cap - fallback to fastest
+            coolest_route = fastest_route
+            detour_cap_enforced = True
+            detour_cap_note = f" (All shaded alternatives exceed {max_detour_percent}% detour cap; fastest baseline maintained)."
+            coolest_route["detour_cap_enforced"] = True
+
+        # Balanced route is safe route between fastest and coolest within detour cap
         intermediate_candidates = [
             r for r in safe_routes 
-            if r["id"] != fastest_route["id"] and r["id"] != coolest_route["id"]
+            if r["id"] != fastest_route["id"] and r["id"] != coolest_route["id"] and r["detour_percent"] <= max_detour_percent
         ]
         saving_candidates = [r for r in intermediate_candidates if r.get("exposure_reduction_pct", 0) > 0]
         if saving_candidates:
             balanced_route = max(saving_candidates, key=lambda r: r["exposure_reduction_pct"])
-        elif intermediate_candidates:
-            balanced_route = min(intermediate_candidates, key=lambda r: r["raw_exposure_score"])
-        else:
+        elif coolest_route.get("exposure_reduction_pct", 0) > 0:
             balanced_route = coolest_route
+        else:
+            balanced_route = fastest_route
 
         for r in safe_routes:
             if r["id"] == fastest_route["id"]:
@@ -634,22 +668,22 @@ def optimize_routes(
             flood_warning = ""
         decision_summary = (
             f"⛈️ Monsoon Downpour Advisory ({time_str}): {rec_route['name']} recommended for 100% covered rain shelters "
-            f"and zero standing water.{flood_warning}{pitstop_msg}"
+            f"and zero standing water.{flood_warning}{pitstop_msg}{detour_cap_note}"
         )
     elif rec_route["mode"] == "COOLEST":
         decision_summary = (
             f"☀️ Heatwave Advisory ({time_str}, Sun Altitude: {solar_pos['altitude_deg']:.1f}°): The Coolest Route cuts "
             f"{rec_route['exposure_reduction_pct']}% estimated thermal exposure for a modest "
-            f"+{rec_route['detour_percent']}% (+{rec_route['total_duration_min'] - fastest_duration:.1f} min) detour.{pitstop_msg}"
+            f"+{rec_route['detour_percent']}% (+{rec_route['total_duration_min'] - fastest_duration:.1f} min) detour.{pitstop_msg}{detour_cap_note}"
         )
     elif rec_route["mode"] == "BALANCED":
         decision_summary = (
             f"☀️ Heatwave Advisory ({time_str}): The Balanced Route ({rec_route['name']}) achieves {rec_route['exposure_reduction_pct']}% lower thermal "
-            f"load with only +{rec_route['total_duration_min'] - fastest_duration:.1f} min additional walk time.{pitstop_msg}"
+            f"load with only +{rec_route['total_duration_min'] - fastest_duration:.1f} min additional walk time.{pitstop_msg}{detour_cap_note}"
         )
     else:
         decision_summary = (
-            f"Fastest route prioritized ({fastest_duration:.1f} mins). Note: Has {fastest_route['exposure_label']} thermal exposure.{pitstop_msg}"
+            f"Fastest route prioritized ({fastest_duration:.1f} mins). Note: Has {fastest_route['exposure_label']} thermal exposure.{pitstop_msg}{detour_cap_note}"
         )
 
     # CloudWatch demo telemetry metrics
@@ -676,8 +710,10 @@ def optimize_routes(
         "ambient_temp_c": ambient_temp_c,
         "relative_humidity": humidity_pct,
         "heat_index_c": heat_index_c,
+        "detour_cap_enforced": detour_cap_enforced,
         "routes": evaluated_routes,
         "hydration_pois": corridor_pois,
         "decision_summary": decision_summary,
-        "aws_telemetry": aws_telemetry
+        "aws_telemetry": aws_telemetry,
+        "uncertainty_note": "Relative thermal exposure is modeled via Rothfusz Heat Index, solar insolation, and GIS canopy/canyon geometries (±8% uncertainty on curated corridors, ±18% on synthesized paths). Not a clinical medical metric."
     }

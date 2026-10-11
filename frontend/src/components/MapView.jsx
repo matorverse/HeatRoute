@@ -55,6 +55,17 @@ const AWS_STYLE_URL = hasAwsLocationConfig
       : `https://maps.geo.${AWS_REGION}.amazonaws.com/v2/styles/${AWS_STYLE_NAME}/descriptor?key=${AWS_API_KEY}&color-scheme=Dark`)
   : null;
 
+// Escape HTML to prevent XSS in MapLibre popups
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function MapView({
   routes = [],
   selectedRouteId,
@@ -432,13 +443,31 @@ function MapView({
   }
 
   function updatePoiMarkers(map, pois, isVisible) {
-    // Clear old markers if POI list changed
+    if (!pois || pois.length === 0) {
+      if (markersRef.current.length > 0) {
+        markersRef.current.forEach(m => m.remove());
+        markersRef.current = [];
+      }
+      return;
+    }
+
+    // Fast path: If markers already exist for this exact set of POIs, simply toggle visibility
+    const currentPoiIds = markersRef.current.map(m => m._poiId).join(",");
+    const newPoiIds = pois.map(p => p.id).join(",");
+
+    if (markersRef.current.length === pois.length && currentPoiIds === newPoiIds) {
+      markersRef.current.forEach(marker => {
+        const el = marker.getElement();
+        if (el) el.style.display = isVisible ? "flex" : "none";
+      });
+      return;
+    }
+
+    // Otherwise, rebuild markers for new corridor POIs
     if (markersRef.current.length > 0) {
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
     }
-
-    if (!pois || pois.length === 0) return;
 
     pois.forEach(poi => {
       const el = document.createElement("div");
@@ -449,15 +478,21 @@ function MapView({
 
       const isCurrentPitstop = (activePitstopPoiId === poi.id);
 
+      const safeName = escapeHtml(poi.name);
+      const safeType = escapeHtml(poi.type?.replace(/_/g, ' '));
+      const safeStatus = escapeHtml(poi.verified_status);
+      const safeFeatures = escapeHtml(poi.features?.join(", ") || "");
+      const safeId = escapeHtml(poi.id);
+
       const popup = new maplibregl.Popup({ offset: 15, closeButton: true }).setHTML(`
         <div style="font-family: var(--font-body), -apple-system, sans-serif; font-size: 12px; color: #F1F5FB; padding: 6px; min-width: 180px;">
-          <strong style="color: #42D5FF; font-size: 13px; font-weight: 700;">${poi.name}</strong><br/>
-          <span style="color: #98A8BD; font-size: 11px;">Type: ${poi.type.replace(/_/g, ' ')}</span><br/>
-          <span style="color: #31D5B0; font-weight: 600; font-size: 11px;">● ${poi.verified_status}</span><br/>
-          <small style="color: #64748B; font-size: 10px;">${poi.features?.join(", ") || ""}</small>
+          <strong style="color: #42D5FF; font-size: 13px; font-weight: 700;">${safeName}</strong><br/>
+          <span style="color: #98A8BD; font-size: 11px;">Type: ${safeType}</span><br/>
+          <span style="color: #31D5B0; font-weight: 600; font-size: 11px;">● ${safeStatus}</span><br/>
+          <small style="color: #64748B; font-size: 10px;">${safeFeatures}</small>
           <div style="margin-top: 8px;">
             <button 
-              id="btn-pitstop-${poi.id}" 
+              id="btn-pitstop-${safeId}" 
               style="width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid ${isCurrentPitstop ? '#FF555F' : '#42D5FF'}; background: ${isCurrentPitstop ? 'rgba(255, 85, 95, 0.2)' : 'rgba(66, 213, 255, 0.2)'}; color: ${isCurrentPitstop ? '#FCA5A5' : '#42D5FF'}; transition: all 0.15s ease;"
             >
               ${isCurrentPitstop ? "✖ Remove Waypoint" : "+ Add Route Waypoint"}
@@ -468,7 +503,7 @@ function MapView({
 
       popup.on("open", () => {
         setTimeout(() => {
-          const btn = document.getElementById(`btn-pitstop-${poi.id}`);
+          const btn = document.getElementById(`btn-pitstop-${safeId}`);
           if (btn && onTogglePitstop) {
             btn.onclick = () => {
               onTogglePitstop(poi.id);
@@ -483,6 +518,7 @@ function MapView({
         .setPopup(popup)
         .addTo(map);
 
+      marker._poiId = poi.id;
       markersRef.current.push(marker);
     });
   }

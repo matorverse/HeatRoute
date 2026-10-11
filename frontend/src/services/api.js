@@ -35,7 +35,9 @@ export async function fetchCorridors() {
   return FALLBACK_CORRIDORS;
 }
 
-export async function fetchRouteEvaluation(params = {}) {
+export async function fetchRouteEvaluation(params = {}, signal = null) {
+  if (signal?.aborted) return null;
+
   const {
     departureTime = "2026-06-15T13:30:00+05:30",
     ambientTempC = 43.5,
@@ -53,7 +55,7 @@ export async function fetchRouteEvaluation(params = {}) {
   const originCoords = origin || targetCorridor.origin.coordinates;
   const destCoords = destination || targetCorridor.destination.coordinates;
 
-  const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${originCoords.join(",")}_${destCoords.join(",")}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}`;
+  const cacheKey = `${corridorId}_${season}_${pitstopPoiId || "none"}_${originCoords.join(",")}_${destCoords.join(",")}_${departureTime}_${ambientTempC}_${humidityPct}_${modePreference}_${maxDetourPercent}`;
   if (evaluationCache.has(cacheKey)) {
     return evaluationCache.get(cacheKey);
   }
@@ -63,11 +65,12 @@ export async function fetchRouteEvaluation(params = {}) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8.0s timeout to allow OSRM street network query
+    const requestSignal = signal || controller.signal;
 
     const res = await fetch(`${BACKEND_URL}/api/v1/routes/evaluate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
+      signal: requestSignal,
       body: JSON.stringify({
         origin: originCoords,
         destination: destCoords,
@@ -89,8 +92,11 @@ export async function fetchRouteEvaluation(params = {}) {
       result = { ...data, is_live_cloud: true };
     }
   } catch (err) {
+    if (signal?.aborted) return null;
     // Silent fallback to client-side engine without noisy console spew
   }
+
+  if (signal?.aborted) return null;
 
   if (!result) {
     // Resilient deterministic client-side calculation
@@ -99,6 +105,7 @@ export async function fetchRouteEvaluation(params = {}) {
       ambientTempC,
       humidityPct,
       modePreference,
+      maxDetourPercent,
       season,
       corridorId,
       origin: originCoords,
@@ -107,7 +114,9 @@ export async function fetchRouteEvaluation(params = {}) {
     });
   }
 
-  // Cache result
+  if (signal?.aborted) return null;
+
+  // Cache result with LRU eviction
   if (evaluationCache.size >= MAX_CACHE_SIZE) {
     const oldestKey = evaluationCache.keys().next().value;
     evaluationCache.delete(oldestKey);
@@ -340,16 +349,45 @@ async function simulateDynamicEvaluation({
         }
       }
     });
+  }
 
-    const fastest = clonedRoutes.find(r => r.mode === "FASTEST" && r.mode !== "REJECTED_UNSAFE") ||
-                    clonedRoutes.find(r => r.mode !== "REJECTED_UNSAFE");
-    
-    if (fastest) {
+  const fastest = clonedRoutes.find(r => r.mode === "FASTEST" && r.mode !== "REJECTED_UNSAFE") ||
+                  clonedRoutes.find(r => r.mode !== "REJECTED_UNSAFE") || clonedRoutes[0];
+  
+  const isCustomCorridor = (activeCorridorId === "CUSTOM_PLANNER" || Boolean(origin && destination));
+  const uncertaintyMargin = isCustomCorridor ? 18.0 : 8.0;
+
+  clonedRoutes.forEach(r => {
+    if (r.mode !== "REJECTED_UNSAFE" && fastest) {
+      const detour = ((r.total_duration_min - fastest.total_duration_min) / Math.max(0.1, fastest.total_duration_min)) * 100;
+      r.detour_percent = Math.max(0, Math.round(detour * 10) / 10);
+    } else {
+      r.detour_percent = 0.0;
+    }
+    r.uncertainty_margin_pct = uncertaintyMargin;
+    const factor = uncertaintyMargin / 100;
+    r.estimated_exposure_range = [
+      Math.round(Math.max(0, r.raw_exposure_score * (1 - factor)) * 10) / 10,
+      Math.round(r.raw_exposure_score * (1 + factor) * 10) / 10
+    ];
+    r.scientific_disclaimer = "Modeled Relative Thermal Exposure based on Steadman Heat Index and GIS canopy/canyon geometry. Not a medical clinical assessment.";
+    r.detour_cap_enforced = false;
+  });
+
+  // Detour cap check for recommended route
+  let detourCapEnforced = false;
+  if (!isMonsoon && fastest) {
+    const safeRoutes = clonedRoutes.filter(r => r.mode !== "REJECTED_UNSAFE");
+    const compliant = safeRoutes.filter(r => r.detour_percent <= maxDetourPercent);
+    if (compliant.length > 0) {
+      const bestCompliant = compliant.reduce((min, cur) => cur.raw_exposure_score < min.raw_exposure_score ? cur : min, compliant[0]);
+      const absoluteLowest = safeRoutes.reduce((min, cur) => cur.raw_exposure_score < min.raw_exposure_score ? cur : min, safeRoutes[0]);
+      if (bestCompliant.id !== absoluteLowest.id) {
+        detourCapEnforced = true;
+        bestCompliant.detour_cap_enforced = true;
+      }
       clonedRoutes.forEach(r => {
-        if (r.mode !== "REJECTED_UNSAFE") {
-          const saved = ((fastest.raw_exposure_score - r.raw_exposure_score) / Math.max(0.1, fastest.raw_exposure_score)) * 100;
-          r.exposure_reduction_pct = Math.max(0, Math.round(saved * 10) / 10);
-        }
+        r.is_recommended = (r.id === bestCompliant.id);
       });
     }
   }
@@ -373,6 +411,7 @@ async function simulateDynamicEvaluation({
   const timeFormatted = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   let decisionSummary = "";
   const pitstopNote = matchedPoi ? ` (Includes hydration waypoint at ${matchedPoi.name})` : "";
+  const detourNote = detourCapEnforced ? ` [Detour ceiling ${maxDetourPercent}% applied].` : "";
 
   const recommendedRoute = clonedRoutes.find(r => r.is_recommended) || clonedRoutes[0];
 
@@ -380,11 +419,11 @@ async function simulateDynamicEvaluation({
     const floodWarning = clonedRoutes.some(r => r.id === "route-minto-underpass" && r.mode === "REJECTED_UNSAFE")
       ? " ⚠️ Minto Sunken Underpass disqualified (1.8m flood hazard)."
       : "";
-    decisionSummary = `⛈️ Monsoon Downpour Advisory (${timeFormatted}): ${recommendedRoute?.name} recommended for covered rain shelters and zero standing water.${floodWarning}${pitstopNote}`;
+    decisionSummary = `⛈️ Monsoon Downpour Advisory (${timeFormatted}): ${recommendedRoute?.name} recommended for covered rain shelters and zero standing water.${floodWarning}${pitstopNote}${detourNote}`;
   } else if (isLateAfternoon) {
-    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): Lengthening building shadows provide improved thermal protection along ${activeCorridor.name}.${pitstopNote}`;
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): Lengthening building shadows provide improved thermal protection along ${activeCorridor.name}.${pitstopNote}${detourNote}`;
   } else {
-    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): ${recommendedRoute?.name} cuts thermal radiant load under protected urban canopies.${pitstopNote}`;
+    decisionSummary = `☀️ Heatwave Advisory (${timeFormatted}, Sun Altitude: ${Math.round(solarAlt)}°): ${recommendedRoute?.name} cuts thermal radiant load under protected urban canopies.${pitstopNote}${detourNote}`;
   }
 
   return {
@@ -400,6 +439,7 @@ async function simulateDynamicEvaluation({
     ambient_temp_c: isMonsoon ? 32.5 : ambientTempC,
     relative_humidity: isMonsoon ? 85.0 : humidityPct,
     heat_index_c: isMonsoon ? 42.1 : 59.8,
+    detour_cap_enforced: detourCapEnforced,
     routes: clonedRoutes,
     hydration_pois: corridorPois,
     decision_summary: decisionSummary,
@@ -410,6 +450,7 @@ async function simulateDynamicEvaluation({
         value: isMonsoon ? 1.0 : 13.98,
         unit: isMonsoon ? "Hazards" : "StressHours"
       }
-    }
+    },
+    uncertainty_note: "Modeled Relative Thermal Exposure based on Steadman Heat Index and GIS canopy/canyon geometries (±8% uncertainty on curated corridors, ±18% on synthesized paths). Not a clinical medical assessment."
   };
 }

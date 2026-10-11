@@ -96,39 +96,45 @@ export default function App() {
     const ambientTemp = season === "MONSOON" ? 32.5 : (currentHour >= 16 ? 40.0 : 43.5);
     const humidity = season === "MONSOON" ? 85.0 : (currentHour >= 16 ? 45.0 : 42.0);
 
+    const abortController = new AbortController();
+
     const timer = setTimeout(() => {
       fetchRouteEvaluation({
         departureTime: isoString,
         ambientTempC: ambientTemp,
         humidityPct: humidity,
         modePreference: "BALANCED",
+        maxDetourPercent: 25.0,
         season: season,
         corridorId: isCustomMode ? "CUSTOM_PLANNER" : selectedCorridorId,
         origin: isCustomMode ? customPoints.origin : null,
         destination: isCustomMode ? customPoints.destination : null,
         pitstopPoiId: activePitstopPoiId
-      }).then(data => {
-        if (isMounted) {
-          setEvaluationData(data);
-          setIsLoading(false);
-          if (isCustomMode && customPoints.origin && customPoints.destination) {
-            setCustomStatusMessage("✓ Custom Routes Active · Click map to repick or Reset");
-          }
-          // Preserve currently selected route if valid, otherwise fallback to recommended
-          setSelectedRouteId(prev => {
-            if (prev && data.routes?.some(r => r.id === prev && r.mode !== "REJECTED_UNSAFE")) {
-              return prev;
-            }
-            const rec = data.routes?.find(r => r.is_recommended) || data.routes?.[0];
-            return rec ? rec.id : prev;
-          });
+      }, abortController.signal).then(data => {
+        if (!isMounted || !data) return;
+        setEvaluationData(data);
+        setIsLoading(false);
+        if (isCustomMode && customPoints.origin && customPoints.destination) {
+          setCustomStatusMessage("✓ Custom Routes Active · Click map to repick or Reset");
         }
+        // Preserve currently selected route if valid, otherwise fallback to recommended
+        setSelectedRouteId(prev => {
+          if (prev && data.routes?.some(r => r.id === prev && r.mode !== "REJECTED_UNSAFE")) {
+            return prev;
+          }
+          const rec = data.routes?.find(r => r.is_recommended) || data.routes?.[0];
+          return rec ? rec.id : prev;
+        });
+      }).catch(err => {
+        if (err?.name === "AbortError") return;
+        if (isMounted) setIsLoading(false);
       });
     }, 100);
 
     return () => {
       isMounted = false;
       clearTimeout(timer);
+      abortController.abort();
     };
   }, [currentHour, season, selectedCorridorId, activePitstopPoiId, isCustomMode, customPoints]);
 
@@ -250,7 +256,14 @@ export default function App() {
             <div>
               <div className="brand-title-wrap">
                 <span className="brand-name">HeatRoute</span>
-                <span className="status-live-dot" title="Live Amazon Location Service Engine">
+                <span 
+                  className="status-live-dot" 
+                  title="Click to view AWS Infrastructure & Telemetry"
+                  onClick={() => setIsAwsModalOpen(true)}
+                  style={{ cursor: "pointer" }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <span className="pulsing-beacon" />
                   <span>{evaluationData?.is_live_cloud ? "AWS" : "LIVE"}</span>
                 </span>
@@ -301,7 +314,14 @@ export default function App() {
             <div>
               <div className="brand-title-wrap">
                 <span className="brand-name">HeatRoute</span>
-                <span className="status-live-dot" title="Live Amazon Location Service Engine">
+                <span 
+                  className="status-live-dot" 
+                  title="Click to view AWS Infrastructure & Telemetry"
+                  onClick={() => setIsAwsModalOpen(true)}
+                  style={{ cursor: "pointer" }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <span className="pulsing-beacon" />
                   <span>{evaluationData?.is_live_cloud ? "AWS LIVE" : "DEMO READY"}</span>
                 </span>
@@ -399,8 +419,9 @@ export default function App() {
               type="button"
               className="hud-aws-btn"
               onClick={() => setIsAwsModalOpen(true)}
+              title="Click to view AWS Infrastructure & Telemetry Details"
             >
-              <Cloud size={13} />
+              <Cloud size={13} color="#FF9900" />
               <span>AWS Telemetry</span>
             </button>
           </div>

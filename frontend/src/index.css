@@ -2823,3 +2823,118 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   AWS TELEMETRY & CLOUD METRICS MODAL
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 7, 18, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 16px;
+  animation: modal-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  position: relative;
+  background: #0B111E;
+  border: 1px solid rgba(255, 153, 0, 0.35); /* AWS Amber accent */
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 22px 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85),
+              0 0 35px rgba(255, 153, 0, 0.15);
+  animation: modal-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display, "Space Grotesk", sans-serif);
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  letter-spacing: -0.01em;
+}
+
+.close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: scale(1.05);
+}
+
+.aws-spec-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 14px 0;
+}
+
+.aws-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.aws-card-row:hover {
+  background: rgba(23, 33, 53, 0.95);
+  border-color: rgba(255, 153, 0, 0.28);
+  transform: translateY(-1px);
+}
+

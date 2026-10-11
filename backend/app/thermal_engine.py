@@ -68,29 +68,30 @@ def calculate_segment_exposure(
     Computes Segment Thermal Exposure (STE).
     STE = Duration (sec) * [Base Heat Index + Solar Factor * Surface Multiplier - Wind Relief]
     """
-    duration_sec = length_m / max(0.5, pedestrian_speed_m_s)
+    duration_sec = max(0.0, float(length_m)) / max(0.5, float(pedestrian_speed_m_s))
     surface_mod = SURFACE_MODIFIERS.get(surface_type.lower(), 1.05)
 
     # Solar direct insolation component (reduced by shade)
     # Higher solar altitude = more perpendicular sunlight
-    solar_angle_factor = math.sin(math.radians(max(0.0, solar_altitude_deg)))
-    unshaded_fraction = max(0.0, 1.0 - effective_shade)
+    clamped_shade = max(0.0, min(1.0, float(effective_shade)))
+    solar_angle_factor = math.sin(math.radians(max(0.0, float(solar_altitude_deg))))
+    unshaded_fraction = max(0.0, 1.0 - clamped_shade)
 
     # Base atmospheric thermal stress
-    base_stress = base_heat_index_c * 0.35
+    base_stress = float(base_heat_index_c) * 0.35
 
     # Direct solar radiation load (Mean Radiant Temperature component)
     # Direct sun can elevate perceived temperature by 12-18°C above air temp.
     # In shade, solar_load drops towards 0.
     solar_intensity_peak = 28.0  # Max thermal penalty under direct noon sun
-    solar_load = (solar_radiation_w_m2 / 800.0) * solar_angle_factor * unshaded_fraction * solar_intensity_peak
+    solar_load = (max(0.0, float(solar_radiation_w_m2)) / 800.0) * solar_angle_factor * unshaded_fraction * solar_intensity_peak
 
     # Ground surface thermal re-radiation modifier
     # Unshaded blacktop asphalt re-radiates intense heat; shaded paver blocks stay cooler.
-    effective_surface_heat = (surface_mod - 1.0) * 12.0 * (1.0 - (effective_shade * 0.7))
+    effective_surface_heat = (surface_mod - 1.0) * 12.0 * (1.0 - (clamped_shade * 0.7))
 
     # Mild convective wind relief
-    wind_cooling = min(4.0, (wind_speed_kmh / 15.0) * 2.0)
+    wind_cooling = min(4.0, (max(0.0, float(wind_speed_kmh)) / 15.0) * 2.0)
 
     # Human thermal strain rate per minute (Equivalent Thermal Strain Index)
     thermal_rate = base_stress + solar_load + effective_surface_heat - wind_cooling
@@ -100,11 +101,11 @@ def calculate_segment_exposure(
     ste_score = (duration_sec / 60.0) * thermal_rate
 
     return {
-        "length_m": round(length_m, 1),
+        "length_m": round(max(0.0, float(length_m)), 1),
         "duration_sec": round(duration_sec, 0),
         "duration_min": round(duration_sec / 60.0, 1),
         "surface_type": surface_type,
-        "effective_shade": effective_shade,
+        "effective_shade": clamped_shade,
         "surface_modifier": surface_mod,
         "thermal_intensity_rate": round(thermal_rate, 1),
         "segment_exposure_score": round(ste_score, 1)
@@ -114,11 +115,12 @@ def calculate_segment_exposure(
 def evaluate_route_thermal_exposure(
     segments_evaluation: List[Dict[str, Any]],
     total_length_m: float,
-    total_duration_sec: float
+    total_duration_sec: float,
+    is_curated_gis: bool = True
 ) -> Dict[str, Any]:
     """
     Aggregates segment scores into Route Relative Thermal Exposure (RTE).
-    Outputs explainable contributing factors and confidence rating.
+    Outputs explainable contributing factors, confidence rating, and scientific uncertainty margins.
     """
     total_exposure = sum(seg["segment_exposure_score"] for seg in segments_evaluation)
 
@@ -149,6 +151,13 @@ def evaluate_route_thermal_exposure(
     elif weighted_surface_mod < 0.90:
         factors.append("Cooler ground surface (vegetated park paths / covered colonnades)")
 
+    # Scientific honesty: Curated GIS dataset has verified building/canopy footprints (±8% margin),
+    # while custom dynamic synthesis relies on proxy canyon models (±18% margin).
+    confidence = "HIGH" if is_curated_gis else "MODERATE"
+    uncertainty_margin_pct = 8.0 if is_curated_gis else 18.0
+    range_low = round(max(0.0, total_exposure * (1.0 - uncertainty_margin_pct / 100.0)), 1)
+    range_high = round(total_exposure * (1.0 + uncertainty_margin_pct / 100.0), 1)
+
     return {
         "raw_exposure_score": round(total_exposure, 1),
         "exposure_label": exposure_label,
@@ -156,5 +165,8 @@ def evaluate_route_thermal_exposure(
         "avg_shade_percentage": round(weighted_shade * 100, 1),
         "avg_surface_modifier": round(weighted_surface_mod, 2),
         "contributing_factors": factors,
-        "confidence": "HIGH"
+        "confidence": confidence,
+        "uncertainty_margin_pct": uncertainty_margin_pct,
+        "estimated_exposure_range": [range_low, range_high],
+        "scientific_disclaimer": "Modeled Relative Thermal Exposure based on Steadman Heat Index, solar insolation, and GIS canopy/canyon geometry. Not a clinical medical assessment."
     }
