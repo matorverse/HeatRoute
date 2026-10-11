@@ -69,14 +69,15 @@ function MapView({
   isCustomMode = false,
   customPoints = { origin: null, destination: null },
   onMapClickPoint,
-  isMobile = false
+  isMobile = false,
+  isSidebarCollapsed = false
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const pitstopMarkerRef = useRef(null);
   const currentCorridorIdRef = useRef(activeCorridor?.id);
-  const [isLegendExpanded, setIsLegendExpanded] = useState(!isMobile);
+  const [isLegendExpanded, setIsLegendExpanded] = useState(false);
 
   // Initialize MapLibre with Amazon Location Service or Carto Fallback
   useEffect(() => {
@@ -490,20 +491,20 @@ function MapView({
     <div className="map-view-wrapper">
       <div id="maplibre-canvas" ref={mapContainerRef} />
       
-      {/* On-Map Tactical Route & Hazard Legend */}
-      <div className={`map-tactical-legend ${isMobile ? "mobile-legend" : ""}`}>
-        <div className="legend-header-row">
-          <span className="legend-title">Route & Hazard Legend</span>
-          <button
-            type="button"
-            className="legend-toggle-btn"
-            onClick={() => setIsLegendExpanded(!isLegendExpanded)}
-            title={isLegendExpanded ? "Collapse legend" : "Expand legend"}
-            aria-label="Toggle map legend"
-          >
-            {isLegendExpanded ? "−" : "+"}
-          </button>
-        </div>
+      {/* On-Map Tactical Route & Hazard Legend (Collapsible Chip) */}
+      <div className={`map-tactical-legend ${isLegendExpanded ? "expanded" : "collapsed"} ${isMobile ? "mobile-legend" : ""} ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+        <button
+          type="button"
+          className="legend-toggle-pill"
+          onClick={() => setIsLegendExpanded(!isLegendExpanded)}
+          title={isLegendExpanded ? "Collapse legend" : "View route & hazard color legend"}
+          aria-label="Toggle map legend"
+          aria-expanded={isLegendExpanded}
+        >
+          <span className="legend-pill-icon">🗺️</span>
+          <span className="legend-title">Legend</span>
+          <span className="legend-toggle-chevron">{isLegendExpanded ? "▲" : "▼"}</span>
+        </button>
 
         {isLegendExpanded && (
           <div className="legend-items-list">

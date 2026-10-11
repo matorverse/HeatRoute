@@ -9,6 +9,8 @@ import {
   CloudRain, 
   ChevronDown, 
   ChevronUp, 
+  ChevronLeft,
+  ChevronRight,
   Volume2, 
   Square, 
   AlertOctagon, 
@@ -34,6 +36,7 @@ export default function App() {
   const [corridors, setCorridors] = useState(FALLBACK_CORRIDORS);
   const [selectedCorridorId, setSelectedCorridorId] = useState("DELHI_CP_TO_MANDI_HOUSE");
   const [activePitstopPoiId, setActivePitstopPoiId] = useState(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Custom Point-to-Point Planner State
   const [isCustomMode, setIsCustomMode] = useState(false);
@@ -230,6 +233,7 @@ export default function App() {
           customPoints={customPoints}
           onMapClickPoint={handleMapClickPoint}
           isMobile={isMobile}
+          isSidebarCollapsed={isSidebarCollapsed}
         />
       </main>
 
@@ -341,25 +345,6 @@ export default function App() {
               <MapPin size={13} color={isCustomMode ? "#FF6B2B" : "currentColor"} />
               <span>{isCustomMode ? "Exit Custom" : "📍 Pick on Map"}</span>
             </button>
-
-            {!isCustomMode && (
-              <div className="hud-corridor-select-box">
-                <MapPin size={13} color="var(--color-heat-primary)" />
-                <select
-                  id="corridor-select"
-                  className="hud-corridor-dropdown"
-                  value={selectedCorridorId}
-                  onChange={handleCorridorChange}
-                >
-                  {corridors.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.city})
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="hud-dropdown-caret" />
-              </div>
-            )}
           </div>
 
           {/* Right: Environmental Microclimate Telemetry & Actions */}
@@ -446,102 +431,149 @@ export default function App() {
 
       {/* 4. Left Floating Tactical Route Deck (Desktop PC Only) */}
       {isDesktop && (
-        <aside className="hud-route-deck">
-          <div className="deck-scroll-content">
-            {/* Corridor Endpoints Indicator */}
-            <div className="corridor-endpoints-banner">
-              <div className="endpoint-tag">
-                <span className="endpoint-dot origin" />
-                <span>{activeCorridor?.origin?.name || "Origin"}</span>
-              </div>
-              <span className="corridor-arrow">➔</span>
-              <div className="endpoint-tag">
-                <span className="endpoint-dot dest" />
-                <span>{activeCorridor?.destination?.name || "Destination"}</span>
-              </div>
-            </div>
+        isSidebarCollapsed ? (
+          <button
+            id="sidebar-reopen-btn"
+            type="button"
+            className="sidebar-reopen-pill"
+            onClick={() => setIsSidebarCollapsed(false)}
+            title="Open Route Deck"
+          >
+            <Navigation size={13} color="var(--color-accent-cyan)" />
+            <span>Routes ({activeRoutes.length})</span>
+            <ChevronRight size={13} />
+          </button>
+        ) : (
+          <aside className="hud-route-deck">
+            <div className="deck-scroll-content">
+              {/* Corridor Selector Header with Collapse Button */}
+              <div className="deck-corridor-box">
+                <div className="deck-corridor-select-row">
+                  {!isCustomMode ? (
+                    <div className="deck-corridor-select-box">
+                      <MapPin size={13} color="var(--color-accent-cyan)" />
+                      <select
+                        id="sidebar-corridor-select"
+                        className="deck-corridor-dropdown"
+                        value={selectedCorridorId}
+                        onChange={handleCorridorChange}
+                      >
+                        {corridors.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.city})
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="hud-dropdown-caret" />
+                    </div>
+                  ) : (
+                    <div className="deck-custom-mode-active-pill">
+                      <span className="pulsing-beacon-amber" />
+                      <span>📍 Custom Map Router Active</span>
+                    </div>
+                  )}
 
-            {/* Active Hydration Waypoint Banner */}
-            {activePitstopPoi && (
-              <div className="pitstop-active-banner">
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Droplets size={14} color="#6EE7B7" />
-                  <span>Waypoint: <strong>{activePitstopPoi.name}</strong> (+1.5m)</span>
+                  <button
+                    type="button"
+                    className="deck-collapse-toggle-btn"
+                    onClick={() => setIsSidebarCollapsed(true)}
+                    title="Collapse routes to view full map"
+                    aria-label="Collapse route deck"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
                 </div>
-                <button 
-                  className="pitstop-clear-btn"
-                  onClick={() => setActivePitstopPoiId(null)}
-                  title="Remove pitstop waypoint"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
 
-            {/* Health Advisory Banner (IMD Criterion / Official Public Safety) */}
-            {season === "SUMMER" && heatIndex >= 54.0 && (
-              <div className="health-advisory-banner danger">
-                <AlertOctagon size={16} color="#FF555F" style={{ flexShrink: 0, marginTop: "2px" }} />
-                <div>
-                  <div className="advisory-source-tag">IMD Heatwave Criterion: Red Alert (&gt;45°C)</div>
-                  <div className="advisory-body-text">Extreme heat stroke hazard. Drink 500ml water every 30m. Rest in covered shade every 1 km.</div>
+                {/* Compact Origin -> Destination Endpoints */}
+                <div className="corridor-endpoints-inline">
+                  <span className="endpoint-dot origin" />
+                  <span className="endpoint-name-text">{activeCorridor?.origin?.name || "Origin"}</span>
+                  <span className="corridor-arrow-glyph">➔</span>
+                  <span className="endpoint-dot dest" />
+                  <span className="endpoint-name-text">{activeCorridor?.destination?.name || "Destination"}</span>
                 </div>
               </div>
-            )}
 
-            {season === "SUMMER" && heatIndex >= 40.0 && heatIndex < 54.0 && (
-              <div className="health-advisory-banner warning">
-                <AlertTriangle size={16} color="#FFBC59" style={{ flexShrink: 0, marginTop: "2px" }} />
-                <div>
-                  <div className="advisory-source-tag">IMD Caution: High Heat Stress</div>
-                  <div className="advisory-body-text">Heat cramps likely under direct sun. Drink 350ml water every 30m. Favor heritage tree canopies.</div>
+              {/* Active Hydration Waypoint Banner */}
+              {activePitstopPoi && (
+                <div className="pitstop-active-banner">
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <Droplets size={13} color="#6EE7B7" />
+                    <span>Waypoint: <strong>{activePitstopPoi.name}</strong> (+1.5m)</span>
+                  </div>
+                  <button 
+                    className="pitstop-clear-btn"
+                    onClick={() => setActivePitstopPoiId(null)}
+                    title="Remove pitstop waypoint"
+                  >
+                    Clear
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {season === "MONSOON" && (
-              <div className="health-advisory-banner monsoon">
-                <CloudRain size={16} color="#42D5FF" style={{ flexShrink: 0, marginTop: "2px" }} />
-                <div>
-                  <div className="advisory-source-tag">Official Flood Warning: Urban Inundation</div>
-                  <div className="advisory-body-text">Waterlogging detected in railway subways and sunken underpasses (&gt;1.2m). Elevated colonnade paths advised.</div>
+              {/* Health Advisory Banner (IMD Criterion / Official Public Safety) - Streamlined */}
+              {season === "SUMMER" && heatIndex >= 54.0 && (
+                <div className="health-advisory-banner danger compact">
+                  <AlertOctagon size={14} color="#FF555F" style={{ flexShrink: 0, marginTop: "1px" }} />
+                  <div className="advisory-inline-wrap">
+                    <span className="advisory-source-tag">IMD Red Alert:</span>
+                    <span className="advisory-body-text"> Extreme heat hazard (&gt;45°C). Quota: 500ml/30m. Rest in shade.</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Explainable Decision Summary */}
-            {evaluationData?.decision_summary && (
-              <div className="decision-card">
-                <Sparkles size={16} className="decision-icon" />
-                <div className="decision-content-wrap">
-                  <span className="decision-source-tag">HeatRoute AI Route Rationale</span>
-                  <div className="decision-text">
+              {season === "SUMMER" && heatIndex >= 40.0 && heatIndex < 54.0 && (
+                <div className="health-advisory-banner warning compact">
+                  <AlertTriangle size={14} color="#FFBC59" style={{ flexShrink: 0, marginTop: "1px" }} />
+                  <div className="advisory-inline-wrap">
+                    <span className="advisory-source-tag">Heat Caution:</span>
+                    <span className="advisory-body-text"> High heat stress. Drink 350ml/30m. Favor tree canopies.</span>
+                  </div>
+                </div>
+              )}
+
+              {season === "MONSOON" && (
+                <div className="health-advisory-banner monsoon compact">
+                  <CloudRain size={14} color="#42D5FF" style={{ flexShrink: 0, marginTop: "1px" }} />
+                  <div className="advisory-inline-wrap">
+                    <span className="advisory-source-tag">Flood Warning:</span>
+                    <span className="advisory-body-text"> Submerged underpass hazard (&gt;1.2m). Colonnades recommended.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Decision Summary - Streamlined */}
+              {evaluationData?.decision_summary && (
+                <div className="decision-card compact">
+                  <Sparkles size={14} className="decision-icon" />
+                  <div className="decision-inline-text">
+                    <span className="decision-source-tag">AI Rationale: </span>
                     {evaluationData.decision_summary}
                   </div>
                 </div>
+              )}
+
+              {/* Candidate Routes Header */}
+              <div className="deck-section-label">
+                <span>Evaluated Paths ({activeRoutes.length})</span>
               </div>
-            )}
 
-            {/* Candidate Routes List */}
-            <div className="deck-section-label">
-              <span>Evaluated Candidate Paths ({activeRoutes.length})</span>
+              <div className="routes-deck-list">
+                {activeRoutes.map(route => (
+                  <RouteCard
+                    key={route.id}
+                    route={route}
+                    isSelected={route.id === selectedRouteId}
+                    onSelect={handleSelectRoute}
+                    activeSeason={season}
+                    corridorName={activeCorridor?.name}
+                    onAddPitstop={handleTogglePitstop}
+                  />
+                ))}
+              </div>
             </div>
-
-            <div className="routes-deck-list">
-              {activeRoutes.map(route => (
-                <RouteCard
-                  key={route.id}
-                  route={route}
-                  isSelected={route.id === selectedRouteId}
-                  onSelect={handleSelectRoute}
-                  activeSeason={season}
-                  corridorName={activeCorridor?.name}
-                  onAddPitstop={handleTogglePitstop}
-                />
-              ))}
-            </div>
-          </div>
-        </aside>
+          </aside>
+        )
       )}
 
       {/* 5. Right Floating Hydration HUD (Minimizable Flyout - Desktop PC Only) */}
@@ -597,7 +629,7 @@ export default function App() {
 
       {/* 6. Bottom Floating Diurnal Time-Travel Scrubber Dock (Desktop PC Only) */}
       {isDesktop && (
-        <footer className="hud-bottom-dock">
+        <footer className={`hud-bottom-dock ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
           <TimeSlider
             currentHour={currentHour}
             onHourChange={handleHourChange}
