@@ -192,7 +192,7 @@ export default function App() {
     } else {
       window.speechSynthesis.cancel();
       const rawText = evaluationData?.decision_summary || "HeatRoute pedestrian guidance active.";
-      const cleanText = rawText.replace(/[\u{1F600}-\u{1F6FF}|[\u{2600}-\u{26FF}]/gu, '');
+      const cleanText = rawText.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{FE00}-\u{FE0F}]/gu, '').trim();
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;

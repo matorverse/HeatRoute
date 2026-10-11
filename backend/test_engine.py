@@ -7,6 +7,10 @@ Validates:
 4. Old Delhi Testbed: Chandni Chowk to Red Fort (Haveli canyon shade)
 5. Hydration Pitstop waypoint insertion
 """
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from app.route_optimizer import optimize_routes
 
 def test_pipeline():

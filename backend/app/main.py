@@ -3,6 +3,7 @@ HeatRoute Backend Service
 FastAPI REST application + AWS Lambda Mangum entry point.
 """
 
+from typing import Annotated
 from fastapi import FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
@@ -108,9 +109,9 @@ def get_hydration_pois(response: Response):
 @app.get("/api/v1/solar-position")
 @app.get("/v1/solar-position")
 def get_solar_position(
-    lat: float = Query(28.6328, description="Latitude"),
-    lon: float = Query(77.2195, description="Longitude"),
-    time_iso: str = Query("2026-06-15T13:30:00+05:30", description="ISO time string")
+    lat: Annotated[float, Query(description="Latitude")] = 28.6328,
+    lon: Annotated[float, Query(description="Longitude")] = 77.2195,
+    time_iso: Annotated[str, Query(description="ISO time string")] = "2026-06-15T13:30:00+05:30"
 ):
     """Calculate solar azimuth and altitude for given coordinates and timestamp."""
     try:

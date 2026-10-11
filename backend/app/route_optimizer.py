@@ -595,26 +595,33 @@ def optimize_routes(
             r for r in safe_routes 
             if r["id"] != fastest_route["id"] and r["id"] != coolest_route["id"]
         ]
-        balanced_route = intermediate_candidates[0] if intermediate_candidates else coolest_route
+        saving_candidates = [r for r in intermediate_candidates if r.get("exposure_reduction_pct", 0) > 0]
+        if saving_candidates:
+            balanced_route = max(saving_candidates, key=lambda r: r["exposure_reduction_pct"])
+        elif intermediate_candidates:
+            balanced_route = min(intermediate_candidates, key=lambda r: r["raw_exposure_score"])
+        else:
+            balanced_route = coolest_route
 
         for r in safe_routes:
             if r["id"] == fastest_route["id"]:
                 r["mode"] = "FASTEST"
             elif r["id"] == coolest_route["id"]:
                 r["mode"] = "COOLEST"
+            elif r["id"] == balanced_route["id"]:
+                r["mode"] = "BALANCED"
             else:
                 r["mode"] = "BALANCED"
 
-        rec_route = None
         pref_upper = mode_preference.upper()
-        for r in safe_routes:
-            if r["mode"] == pref_upper:
-                r["is_recommended"] = True
-                rec_route = r
-                break
-        if not rec_route:
-            rec_route = balanced_route or coolest_route or fastest_route
-            rec_route["is_recommended"] = True
+        if pref_upper == "COOLEST":
+            rec_route = coolest_route
+        elif pref_upper == "FASTEST":
+            rec_route = fastest_route
+        else:
+            rec_route = balanced_route
+
+        rec_route["is_recommended"] = True
 
     # Generate transparent explanation
     time_str = dt.strftime("%I:%M %p")
@@ -637,7 +644,7 @@ def optimize_routes(
         )
     elif rec_route["mode"] == "BALANCED":
         decision_summary = (
-            f"☀️ Heatwave Advisory ({time_str}): The Balanced Route achieves {rec_route['exposure_reduction_pct']}% lower thermal "
+            f"☀️ Heatwave Advisory ({time_str}): The Balanced Route ({rec_route['name']}) achieves {rec_route['exposure_reduction_pct']}% lower thermal "
             f"load with only +{rec_route['total_duration_min'] - fastest_duration:.1f} min additional walk time.{pitstop_msg}"
         )
     else:
