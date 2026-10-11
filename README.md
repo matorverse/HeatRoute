@@ -4,6 +4,13 @@
 **Track 02 — Heat & Water**  
 *“Too much water, too little of it, and the heat in between. Build for the monsoon that floods the street and the summer that dries the tap.”*
 
+[![Live Demo on AWS Amplify](https://img.shields.io/badge/AWS%20Amplify-Live%20Demo-FF9900?style=for-the-badge&logo=aws-amplify&logoColor=white)](https://main.d1n8kxpr67xo92.amplifyapp.com)
+[![Amazon Location Service](https://img.shields.io/badge/Amazon%20Location-Service-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://main.d1n8kxpr67xo92.amplifyapp.com)
+[![Track 02](https://img.shields.io/badge/Bharat%20Builds%20Tour-Track%2002%3A%20Heat%20%26%20Water-00C49F?style=for-the-badge)](https://main.d1n8kxpr67xo92.amplifyapp.com)
+
+> 🚀 **Live Production Application:** [https://main.d1n8kxpr67xo92.amplifyapp.com](https://main.d1n8kxpr67xo92.amplifyapp.com)  
+> *Hosted live on AWS Amplify with Amazon Location Service vector map streaming, dual-hazard simulation (Heatwave & Monsoon Flood), and mobile-responsive spatial navigation.*
+
 ---
 
 ## 1. The Real-World Problem
@@ -97,6 +104,7 @@ Extreme outdoor heat requires physical recovery. HeatRoute integrates active dri
 ```
 
 ### Demonstrable AWS Services:
+* **AWS Amplify Hosting:** Global edge CDN hosting and continuous automated deployment from GitHub: [https://main.d1n8kxpr67xo92.amplifyapp.com](https://main.d1n8kxpr67xo92.amplifyapp.com)
 * **Amazon Location Service (Maps):** Streams high-performance dark navigation vector tiles via MapLibre GL and tokenized API key authentication (`HeatRouteMap`).
 * **AWS Lambda (Python 3.11 + Mangum):** Executes stateless biometeorological calculations at sub-30ms latency.
 * **Amazon API Gateway:** Exposes managed REST endpoints with CORS and rate throttling.
@@ -108,6 +116,8 @@ Extreme outdoor heat requires physical recovery. HeatRoute integrates active dri
 ---
 
 ## 7. Quick Start & Local Run
+
+> 💡 **Try it instantly without local setup:** Open the live cloud deployment at **[https://main.d1n8kxpr67xo92.amplifyapp.com](https://main.d1n8kxpr67xo92.amplifyapp.com)**.
 
 ### Prerequisites
 * Node.js v18+ & npm
@@ -148,3 +158,6 @@ Interactive Web Application will be live at: `http://127.0.0.1:3000/`
 * **Event:** WeMakeDevs Bharat Builds Tour
 * **Track:** Track 02 — Heat & Water
 * **Project:** HeatRoute
+* **Live Deployment:** [https://main.d1n8kxpr67xo92.amplifyapp.com](https://main.d1n8kxpr67xo92.amplifyapp.com)
+* **GitHub Repository:** [https://github.com/matorverse/HeatRoute](https://github.com/matorverse/HeatRoute)
+
